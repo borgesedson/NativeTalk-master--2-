@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --radius: 1rem;
+
+    /* Modern HSL Color Palette */
+    --primary-h: 239;
+    --primary-s: 84%;
+    --primary-l: 67%;
+    --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+
+    --background: hsl(240, 10%, 4%);
+    --foreground: hsl(0, 0%, 98%);
+
+    /* Glassmorphism Utilities */
+    --backdrop-blur-glass: blur(12px);
+    --bg-glass: hsla(240, 10%, 5%, 0.7);
+    --border-glass: hsla(0, 0%, 100%, 0.1);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+@layer base {
+    body {
+        @apply bg-background text-foreground antialiased selection:bg-primary/30;
+    }
+}
+
+@layer utilities {
+    .glass {
+        background: var(--bg-glass);
+        backdrop-filter: var(--backdrop-blur-glass);
+        border: 1px solid var(--border-glass);
+    }
+
+    .glass-card {
+        @apply glass rounded-lg shadow-xl border border-white/5;
+    }
+
+    .text-gradient {
+        @apply bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent;
+    }
+
+    .primary-gradient {
+        @apply bg-gradient-to-br from-primary to-primary/80;
+    }
+}

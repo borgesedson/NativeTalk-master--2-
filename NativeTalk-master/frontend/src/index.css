@@ -1,0 +1,685 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ✅ Reset básico & Native Feel */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+  margin: 0;
+  background-color: #0A1A2F;
+  color: #ffffff;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Allow selection in inputs */
+input,
+textarea,
+p,
+h1,
+h2,
+h3,
+[contenteditable] {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+.screen {
+  min-height: 100vh;
+  padding-bottom: 80px;
+  /* Space for BottomNav */
+}
+
+.screen-no-nav {
+  min-height: 100vh;
+}
+
+/* --- Premium Organic Design System --- */
+:root {
+  --primary: #0D7377;
+  --accent: #F4845F;
+  --bg-main: #0A1A2F;
+  --bg-list: #0D2137;
+  --bg-chat: #111D2E;
+  --bg-card: #1E2A3A;
+  --border: rgba(255, 255, 255, 0.05);
+  --text-main: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.5);
+}
+
+/* ✅ Organic Interactions */
+.organic-press {
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
+  will-change: transform, opacity;
+}
+
+.organic-press:active {
+  transform: scale(0.96) !important;
+  opacity: 0.85;
+  transition: transform 0.05s ease, opacity 0.05s ease;
+}
+
+.fluid-enter {
+  animation: fluidSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fluidSlideUp {
+  0% {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.premium-card {
+  background: rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-card:hover {
+  border-color: rgba(13, 116, 119, 0.5);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+  transform: translateY(-4px);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ✅ Mobile safe areas - VERSÃO ÚNICA */
+@media (max-width: 1023px) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobile-content {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ✅ Texto responsivo */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ✅ Stitch Design Utilities */
+.sent-gradient {
+  background: linear-gradient(135deg, #0D7377, #0a5a5e);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+
+/* ✅ STREAM CHAT - CONFIGURAÇÃO PRINCIPAL */
+.str-chat__channel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom, #c9e8c9, #b7e7bb);
+  height: 100%;
+}
+
+.str-chat__container {
+  max-width: 1200px;
+  width: 100%;
+  height: 100% !important;
+  margin: 0 auto !important;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  /* Performance mobile */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+@media (min-width: 768px) {
+  .str-chat__container {
+    height: 80% !important;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* ✅ HEADER - NÃO ESCONDER */
+.str-chat__header-livestream {
+  position: relative !important;
+  z-index: 10;
+  display: flex !important;
+  /* Garantir que aparece */
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  width: 100% !important;
+}
+
+/* ✅ LISTA DE MENSAGENS */
+.str-chat__list {
+  background-color: #0b141a;
+  /* Dark background to match WhatsApp theme */
+  padding: 8px;
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+  flex: 1;
+  overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+  .str-chat__list {
+    padding: 12px;
+  }
+}
+
+.str-chat__list-notifications {
+  display: block !important;
+  /* ✅ MOSTRAR notificações */
+}
+
+/* ✅ AVATARES - TAMANHO ADEQUADO PARA MOBILE */
+.str-chat__avatar {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  cursor: pointer;
+}
+
+.str-chat__avatar img {
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* ✅ MENSAGENS RESPONSIVAS */
+.str-chat__message-simple {
+  margin-bottom: 8px !important;
+  max-width: 85vw;
+  touch-action: manipulation;
+}
+
+@media (min-width: 768px) {
+  .str-chat__message-simple {
+    max-width: 70%;
+  }
+}
+
+.str-chat__message-text {
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .str-chat__message-text {
+    font-size: 14px !important;
+  }
+}
+
+/* ✅ INPUT DE MENSAGEM */
+.str-chat__message-input {
+  border-top: 1px solid #ddd;
+  padding: 12px !important;
+  background: white;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  touch-action: manipulation;
+}
+
+/* ✅ TEXTAREA MOBILE-FRIENDLY */
+.str-chat__input-flat .str-chat__textarea {
+  border-radius: 20px !important;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  padding: 12px 16px !important;
+  min-height: 44px !important;
+  max-height: 120px !important;
+  font-size: 16px !important;
+  /* Previne zoom iOS */
+  line-height: 1.4 !important;
+  resize: none;
+  -webkit-appearance: none;
+}
+
+.str-chat__input-flat .str-chat__textarea:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+  outline: none !important;
+}
+
+/* ✅ BOTÕES - NÃO ESCONDER */
+.str-chat__send-button {
+  background: #10b981 !important;
+  border-radius: 50% !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  margin-left: 8px !important;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.str-chat__send-button:hover {
+  background: #059669 !important;
+}
+
+.str-chat__send-button svg {
+  width: 20px !important;
+  height: 20px !important;
+  fill: white !important;
+}
+
+/* ✅ BOTÕES IMPORTANTES - MOSTRAR TODOS */
+.str-chat__message-input button,
+.str-chat__message-actions button,
+.str-chat__input-flat-wrapper button {
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+  display: flex !important;
+  /* Forçar exibição */
+  align-items: center;
+  justify-content: center;
+}
+
+/* ✅ GRUPOS E FUNCIONALIDADES - NÃO ESCONDER */
+.str-chat__input-flat .str-chat__input-flat-emojiselect,
+.str-chat__input-flat .str-chat__fileupload-wrapper,
+.str-chat__input .str-chat__input-footer,
+.str-chat__channel-list,
+.str-chat__thread,
+.str-chat__message-actions {
+  display: flex !important;
+  /* ✅ MOSTRAR TUDO */
+}
+
+/* ✅ LAYOUT PRINCIPAL */
+.str-chat__main-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.str-chat__channel-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ✅ THREAD E GRUPOS */
+.str-chat__thread-list {
+  display: block !important;
+  max-width: 100%;
+}
+
+.str-chat__channel-list-messenger {
+  display: block !important;
+  width: 100%;
+}
+
+/* ✅ MOBILE OPTIMIZATIONS */
+@media (max-width: 768px) {
+  .str-chat__channel-list {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    background: white !important;
+    z-index: 9999 !important;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+    display: block !important;
+    overflow-y: auto !important;
+  }
+
+  /* ✅ Mostrar quando ativo */
+  .str-chat__channel-list.str-chat__channel-list--open {
+    transform: translateX(0) !important;
+  }
+}
+
+/* ✅ BOTÃO NATIVO DO STREAM CHAT - FORÇAR VISIBILIDADE */
+.str-chat__header-hamburger,
+.str-chat__channel-list-toggle {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  background: #10b981 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* ✅ Desktop - ChannelList sempre visível */
+@media (min-width: 769px) {
+  .str-chat__channel-list {
+    position: relative !important;
+    transform: none !important;
+    width: 300px !important;
+    height: auto !important;
+    display: block !important;
+    border-right: 1px solid #e5e7eb;
+  }
+}
+
+/* ✅ Layout lado a lado no desktop */
+@media (min-width: 769px) {
+  .str-chat__container {
+    display: flex !important;
+    flex-direction: row !important;
+  }
+
+  .str-chat__channel {
+    flex: 1 !important;
+  }
+}
+
+/* ✅ SAFE AREAS - VERSÃO FINAL */
+@supports (padding: env(safe-area-inset-bottom)) {
+
+  .str-chat__message-input,
+  .wa-message-input-wrapper {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 20px)) !important;
+  }
+}
+
+/* ✅ PERFORMANCE GERAL */
+.str-chat__container,
+.str-chat__message-simple {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* ✅ IMAGENS OTIMIZADAS */
+img {
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.str-chat__avatar img::after {
+  content: "👤";
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ✅ ACCESSIBILITY */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 🔥 FORÇAR GRUPOS MOBILE - ADICIONAR NO FINAL */
+
+/* ✅ Header com botão de menu mobile */
+.str-chat__header-livestream {
+  position: relative !important;
+  z-index: 10;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  width: 100% !important;
+}
+
+/* ✅ Botão hamburger mobile */
+@media (max-width: 768px) {
+  .str-chat__header-livestream::before {
+    content: "☰";
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    background: #f3f4f6;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    order: -1;
+  }
+}
+
+/* ✅ Channel List Mobile - SEMPRE VISÍVEL */
+@media (max-width: 768px) {
+
+  .str-chat__channel-list,
+  .str-chat__channel-list-messenger {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
+    background: white !important;
+    z-index: 9999 !important;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+    display: block !important;
+    overflow-y: auto !important;
+  }
+
+  .str-chat__channel-list.mobile-open,
+  .str-chat__channel-list-messenger.mobile-open {
+    transform: translateX(0) !important;
+  }
+}
+
+/* ✅ Overlay para fechar menu */
+@media (max-width: 768px) {
+  .mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    display: none;
+  }
+
+  .mobile-menu-overlay.active {
+    display: block !important;
+  }
+}
+
+/* ✅ Channel Preview Mobile */
+@media (max-width: 768px) {
+  .str-chat__channel-preview {
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    min-height: 60px !important;
+  }
+
+  .str-chat__channel-preview:hover {
+    background: #f9fafb !important;
+  }
+}
+
+/* ✅ Lista de canais visível */
+.str-chat__channel-list-messenger__main,
+.str-chat__channel-search,
+.str-chat__channel-list {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* ✅ Botões de ação sempre visíveis */
+.str-chat__channel-header button,
+.str-chat__header-livestream button,
+.channel-actions button {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+
+/* ✅ Menu toggle específico */
+.mobile-menu-toggle {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #f3f4f6 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 8px !important;
+    cursor: pointer !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
+/* ===== WhatsApp Orchestrated Layout Fix ===== */
+
+.wa-chat-main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: #0b141a;
+  z-index: 1;
+  height: 100% !important;
+}
+
+/* Wallpaper Layer */
+.wa-chat-main-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg width\='60' height\='60' viewBox\='0 0 60 60' xmlns\='http://www.w3.org/2000/svg'%3E%3Cg fill\='%23ffffff' fill-opacity\='1'%3E%3Cpath d\='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wa-chat-main-container .str-chat__container {
+  max-width: none !important;
+  height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+.wa-chat-main-container .str-chat__main-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.wa-message-list-wrapper {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
+  height: 100% !important;
+}
+
+.wa-message-list-wrapper .str-chat__list {
+  flex: 1 !important;
+  overflow-y: auto !important;
+}
+
+.wa-message-input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #1f2c34;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  z-index: 10;
+  min-height: 60px;
+}
+
+.wa-input-container {
+  flex: 1;
+}
+
+/* Ensure Stream's window and channel-inner also flex correctly */
+.wa-chat-main-container .str-chat__channel,
+.wa-chat-main-container .str-chat__channel-inner {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}

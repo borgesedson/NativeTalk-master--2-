@@ -1,0 +1,51 @@
+{
+  "type": "web_service",
+  "name": "nativetalk",
+  "ownerId": "tea-d44kn1mmcj7s73aokr30",
+  "repo": "https://github.com/borgesedson/NativeTalk",
+  "branch": "master",
+  "rootDir": "backend",
+  "serviceDetails": {
+    "env": "node",
+    "buildCommand": "npm install && cd ../frontend && npm install && npm run build && cd ../backend",
+    "startCommand": "npm start",
+    "envSpecificDetails": {
+      "buildCommand": "npm install && cd ../frontend && npm install && npm run build && cd ../backend",
+      "startCommand": "npm start"
+    },
+    "envVars": [
+      {
+        "key": "MONGO_URI",
+        "value": "mongodb+srv://borgesedson431_db_user:pip2g74j4B06p430@cluster0.ogzp6vj.mongodb.net/streamify?retryWrites=true&w=majority"
+      },
+      {
+        "key": "JWT_SECRET",
+        "value": "meusiteseguro"
+      },
+      {
+        "key": "STREAM_API_KEY",
+        "value": "qqq782vgbvwx"
+      },
+      {
+        "key": "STREAM_SECRET_KEY",
+        "value": "vqcjdey2uetvbq7jqgqt8q33dtaxxfvhjndwkpb24kfd6jcktu9exbx9ksd5ahy7"
+      },
+      {
+        "key": "DEEPL_API_KEY",
+        "value": "eea9e7d4-4868-4257-aece-1de650b0ef93:fx"
+      },
+      {
+        "key": "TRANSLATION_PROVIDER",
+        "value": "deepl"
+      },
+      {
+        "key": "NODE_ENV",
+        "value": "production"
+      },
+      {
+        "key": "PORT",
+        "value": "10000"
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+    "mcpServers": {
+        "context7": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@upstash/context7-mcp",
+                "--api-key",
+                "YOUR_API_KEY"
+            ]
+        },
+        "shadcn": {
+            "command": "npx",
+            "args": [
+                "shadcn@latest",
+                "mcp"
+            ]
+        },
+        "insforge": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@insforge/mcp@latest",
+                "--api_key",
+                "ik_a725f6f8f31f2bec1c5f40adfbb4e653",
+                "--api_base_url",
+                "https://7qi47s5n.us-west.insforge.app"
+            ],
+            "env": {}
+        }
+    }
+}
+// setup mcp server in  ~/.gemini\antigravity\mcp_config.json
