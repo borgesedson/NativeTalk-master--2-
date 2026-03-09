@@ -1,137 +1,163 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, PhoneOff, Volume2, VolumeX, Globe, User, Clock } from 'lucide-react';
-import { getAvatarUrl } from '../../lib/utils';
+import { Mic, MicOff, Volume2, PhoneOff, Globe } from 'lucide-react';
+import { useCallStateHooks, StreamCall } from '@stream-io/video-react-sdk';
 
-const VoiceCallScreen = ({ contact, onEndCall, subtitle, isMuted, onToggleMute, isSpeakerOn, onToggleSpeaker }) => {
-    const [duration, setDuration] = useState(0);
+const VoiceCallScreen = ({ call, contact, currentUser, onEnd }) => {
+    if (!call) {
+        return (
+            <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0D2137]">
+                <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-teal-500 animate-spin mb-4"></div>
+                <p className="text-white/60 font-medium animate-pulse">Conectando chamada de voz...</p>
+            </div>
+        );
+    }
 
+    return (
+        <StreamCall call={call}>
+            <VoiceCallContent call={call} contact={contact} currentUser={currentUser} onEnd={onEnd} />
+        </StreamCall>
+    );
+};
+
+const VoiceCallContent = ({ call, contact, currentUser, onEnd }) => {
+    const { useMicrophoneState } = useCallStateHooks();
+    const { microphone, isMute } = useMicrophoneState();
+
+    const [originalText, setOriginalText] = useState('');
+    const [translatedText, setTranslatedText] = useState('');
+    const [receivedSubtitle, setReceivedSubtitle] = useState('');
+    const [seconds, setSeconds] = useState(0);
+
+    // Timer
     useEffect(() => {
-        const timer = setInterval(() => {
-            setDuration(prev => prev + 1);
-        }, 1000);
+        const timer = setInterval(() => setSeconds(s => s + 1), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    const formatTime = (s) => {
-        const mins = Math.floor(s / 60);
-        const secs = s % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
+    const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+    // Subtitles
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = currentUser?.native_language || 'en-US';
+
+        recognition.onresult = async (event) => {
+            const transcript = Array.from(event.results)
+                .map(r => r[0].transcript).join('');
+            setOriginalText(transcript);
+
+            try {
+                const res = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: transcript,
+                        from: currentUser?.native_language || 'en',
+                        to: contact?.native_language || 'pt'
+                    })
+                });
+                const { translated } = await res.json();
+                if (translated) {
+                    setTranslatedText(translated);
+                    await call.sendCustomEvent({
+                        type: 'subtitle',
+                        data: { text: translated, original: transcript }
+                    });
+                }
+            } catch (err) {
+                console.error('Translation error:', err);
+            }
+        };
+
+        if (!isMute) {
+            // recognition.start() throws an error if already started. Keep it simple in UI:
+            try { recognition.start(); } catch (e) { }
+        }
+
+        return () => {
+            try { recognition.stop(); } catch (e) { }
+        };
+    }, [isMute, currentUser, contact, call]);
+
+    // Receive Subtitles
+    useEffect(() => {
+        if (!call) return;
+        const unsubscribe = call.on('custom', (event) => {
+            if (event.type === 'subtitle') {
+                setReceivedSubtitle(event.data.text);
+            }
+        });
+        return unsubscribe;
+    }, [call]);
+
+    const avatarUrl = contact?.image || contact?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${contact?.name || 'User'}`;
 
     return (
-        <div className="fixed inset-0 z-[500] bg-[#0D2137] text-white flex flex-col items-center font-display overflow-hidden">
-            {/* Header Info */}
-            <motion.header
-                initial={{ y: -50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="w-full p-8 flex flex-col items-center"
-            >
-                <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-2xl border border-white/5 mb-2">
-                    <Clock className="size-3 text-[#0D7377]" />
-                    <span className="text-xs font-mono font-bold tracking-widest text-[#0D7377]">{formatTime(duration)}</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1 bg-[#0D7377]/20 rounded-lg border border-[#0D7377]/30">
-                    <Globe className="size-3 text-[#0D7377] animate-spin-slow" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#0D7377]">Traduzindo ao vivo</span>
-                </div>
-            </motion.header>
+        <div className="fixed inset-0 z-[9999] flex flex-col justify-between bg-gradient-to-b from-[#0D2137] to-[#0A1A2F]">
 
-            {/* Center Content: Avatar */}
-            <main className="flex-1 flex flex-col items-center justify-center pb-24">
-                <div className="relative mb-8">
-                    <motion.div
-                        animate={{
-                            scale: [1, 1.15, 1],
-                            opacity: [0.2, 0.4, 0.2]
-                        }}
-                        transition={{ repeat: Infinity, duration: 4 }}
-                        className="absolute inset-[-30px] bg-[#0D7377]/15 rounded-full blur-2xl"
-                    />
-                    <div className="relative size-[200px] rounded-[60px] overflow-hidden border-2 border-white/10 shadow-2xl bg-[#1a2e44] flex items-center justify-center">
-                        {contact?.avatar_url ? (
-                            <img
-                                src={getAvatarUrl(contact.avatar_url, contact.name)}
-                                alt={contact.name}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <User className="size-24 text-[#0D7377]/20" />
-                        )}
+            {/* Top Section */}
+            <div className="flex flex-col items-center pt-24 gap-4">
+                <img
+                    src={avatarUrl}
+                    alt={contact?.name}
+                    className="w-[140px] h-[140px] rounded-full object-cover border-4 border-white/10 shadow-2xl bg-[#0A1A2F]"
+                />
+                <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                    {contact?.name}
+                    <span className="text-2xl">{contact?.native_language === 'pt' ? '🇧🇷' : '🇺🇸'}</span>
+                </h2>
+                <div className="font-mono text-white/50 text-xl tracking-wider">{formatTime(seconds)}</div>
+
+                <div className="inline-flex items-center gap-2 px-4 py-2 mt-2 rounded-full bg-teal-500/20 text-teal-400 text-sm font-semibold uppercase tracking-wide border border-teal-500/30 shadow-[0_0_15px_rgba(20,184,166,0.3)]">
+                    <Globe className="w-4 h-4" />
+                    Tradução Ativa
+                </div>
+            </div>
+
+            {/* Subtitles Overlay */}
+            <div className="flex-1 flex flex-col justify-end pb-8 px-6 md:px-20 pointer-events-none">
+
+                {originalText && !receivedSubtitle && (
+                    <div className="bg-black/60 backdrop-blur-xl rounded-2xl p-5 shadow-2xl self-end max-w-[85%] border border-white/5 animate-fadeIn mb-4">
+                        <p className="text-gray-400 italic text-[13px] mb-1">Você (Original)</p>
+                        <p className="text-white/90 text-md leading-relaxed">{originalText}</p>
+                        {translatedText && <p className="text-teal-400 font-bold mt-2 text-lg drop-shadow-sm">{translatedText}</p>}
                     </div>
-                </div>
-
-                <div className="text-center group">
-                    <h2 className="text-4xl font-black mb-1 group-hover:scale-105 transition-transform">{contact?.name || 'Contato'}</h2>
-                    <p className="text-white/40 font-bold uppercase tracking-tighter text-sm flex items-center justify-center gap-2">
-                        Em conexão segura
-                        {contact?.native_language && (
-                            <span className="text-lg opacity-80" title={contact.native_language}>
-                                {contact.native_language.toLowerCase().includes('pt') ? '🇧🇷' :
-                                    contact.native_language.toLowerCase().includes('en') ? '🇺🇸' :
-                                        contact.native_language.toLowerCase().includes('es') ? '🇪🇸' : '🌐'}
-                            </span>
-                        )}
-                    </p>
-                </div>
-            </main>
-
-            {/* Subtitles Box */}
-            <AnimatePresence>
-                {subtitle && (
-                    <motion.div
-                        initial={{ y: 20, opacity: 0, scale: 0.95 }}
-                        animate={{ y: 0, opacity: 1, scale: 1 }}
-                        exit={{ y: 20, opacity: 0, scale: 0.95 }}
-                        className="absolute bottom-40 w-full max-w-xl px-6 z-50"
-                    >
-                        <div className="bg-black/60 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-2xl text-center">
-                            <p className="text-xl md:text-2xl font-black text-white leading-tight">
-                                {subtitle}
-                            </p>
-                        </div>
-                    </motion.div>
                 )}
-            </AnimatePresence>
 
-            {/* Controls Bar */}
-            <motion.footer
-                initial={{ y: 100 }}
-                animate={{ y: 0 }}
-                className="w-full p-8 pb-12 flex items-center justify-center"
-            >
-                <div className="bg-white/5 backdrop-blur-2xl border border-white/5 p-4 rounded-[40px] flex items-center gap-6 shadow-2xl">
-                    <button
-                        onClick={onToggleMute}
-                        className={`size-14 rounded-3xl flex items-center justify-center transition-all ${isMuted ? 'bg-red-500/10 text-red-500' : 'bg-white/5 text-white/60 hover:text-white'}`}
-                    >
-                        {isMuted ? <MicOff className="size-6" /> : <Mic className="size-6" />}
-                    </button>
+                {receivedSubtitle && (
+                    <div className="bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-fadeIn w-full max-w-3xl mx-auto flex flex-col items-center text-center">
+                        <p className="text-gray-400 italic text-[14px] mb-2">{contact?.name} (Original)</p>
+                        <p className="text-white font-bold text-2xl md:text-3xl leading-tight drop-shadow-md">{receivedSubtitle}</p>
+                    </div>
+                )}
+            </div>
 
-                    <button
-                        onClick={onEndCall}
-                        className="size-20 bg-[#F4845F] text-white rounded-[2rem] flex items-center justify-center shadow-xl shadow-[#F4845F]/20 hover:scale-110 active:scale-95 transition-all"
-                    >
-                        <PhoneOff className="size-8 stroke-[3px]" />
-                    </button>
+            {/* Controls */}
+            <div className="bg-[#0D2137]/90 backdrop-blur-2xl border-t border-white/10 pb-12 pt-8 px-8 flex justify-center gap-12 rounded-t-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.3)] pointer-events-auto">
+                <button
+                    onClick={() => microphone.toggle()}
+                    className={`w-[64px] h-[64px] rounded-full flex items-center justify-center transition-all shadow-lg ${isMute ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}`}
+                >
+                    {isMute ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+                </button>
 
-                    <button
-                        onClick={onToggleSpeaker}
-                        className={`size-14 rounded-3xl flex items-center justify-center transition-all ${!isSpeakerOn ? 'bg-red-500/10 text-red-500' : 'bg-white/5 text-white/60 hover:text-white'}`}
-                    >
-                        {isSpeakerOn ? <Volume2 className="size-6" /> : <VolumeX className="size-6" />}
-                    </button>
-                </div>
-            </motion.footer>
+                <button
+                    onClick={onEnd}
+                    className="w-[80px] h-[80px] rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white shadow-[0_0_30px_rgba(239,68,68,0.5)] transition-transform hover:scale-110 active:scale-95 border-4 border-red-400/30"
+                >
+                    <PhoneOff className="w-8 h-8" />
+                </button>
 
-            <style dangerouslySetInnerHTML={{
-                __html: `
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
-      `}} />
+                <button className="w-[64px] h-[64px] rounded-full flex items-center justify-center transition-all bg-white/10 text-white hover:bg-white/20 border border-white/10 shadow-lg">
+                    <Volume2 className="w-7 h-7" />
+                </button>
+            </div>
         </div>
     );
 };

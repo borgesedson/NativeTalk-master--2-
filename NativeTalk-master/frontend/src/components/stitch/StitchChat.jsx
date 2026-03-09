@@ -4,12 +4,18 @@ import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { StreamChat } from 'stream-chat';
 import { Chat, ChannelList, Channel, Window, MessageList, MessageInput, useChatContext, useMessageContext, useTypingContext, useMessageInputContext } from 'stream-chat-react';
+import { StreamVideoClient, StreamVideo } from '@stream-io/video-react-sdk';
+import '@stream-io/video-react-sdk/dist/css/styles.css';
 import { useNavigate } from 'react-router';
 import useAuthUser from '../../hooks/useAuthUser';
 import { getStreamToken, translateMessage, getAllUsers } from '../../lib/api';
 import DesktopChatLayout from '../layout/DesktopChatLayout';
 import { getAvatarUrl, getLanguageCode } from '../../lib/utils';
 import AudioRecorder from '../AudioRecorder';
+import CallingScreen from '../calls/CallingScreen';
+import IncomingCallScreen from '../calls/IncomingCallScreen';
+import VoiceCallScreen from '../calls/VoiceCallScreen';
+import VideoCallScreen from '../calls/VideoCallScreen';
 import toast from 'react-hot-toast';
 import { uploadAudio, transcribeAudio } from '../../lib/api';
 
@@ -288,6 +294,8 @@ const ContactsSidebarContent = () => {
     const [isNewChatOpen, setIsNewChatOpen] = useState(false);
     const [channelSearch, setChannelSearch] = useState("");
 
+    if (!currentUser?.id) return null;
+
     const filters = useMemo(() => ({
         type: 'messaging',
         members: { $in: [currentUser.id] }
@@ -487,7 +495,7 @@ const CustomMessageBubble = (props) => {
     );
 };
 
-const CustomChatHeader = () => {
+const CustomChatHeader = ({ onStartVoiceCall, onStartVideoCall }) => {
     const { channel } = useChatContext();
     const { client } = useChatContext();
     const navigate = useNavigate();
@@ -558,10 +566,10 @@ const CustomChatHeader = () => {
                     className={`size-10 rounded-full border border-white/10 flex items-center justify-center transition-all duration-200 shadow-sm active:scale-95 ${showSearch ? 'bg-[#0D7377] text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}>
                     <span className="material-symbols-outlined text-[20px]">search</span>
                 </button>
-                <button onClick={() => navigate(`/call/video/${channel.id}`)} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-200 active:scale-95 shadow-sm">
+                <button onClick={() => onStartVideoCall(otherUser)} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-200 active:scale-95 shadow-sm">
                     <span className="material-symbols-outlined text-[20px]">videocam</span>
                 </button>
-                <button onClick={() => navigate(`/call/voice/${channel.id}`)} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-200 active:scale-95 shadow-sm">
+                <button onClick={() => onStartVoiceCall(otherUser)} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-200 active:scale-95 shadow-sm">
                     <span className="material-symbols-outlined text-[20px]">call</span>
                 </button>
                 <div className="relative">
@@ -768,7 +776,7 @@ const CustomMessageInputUI = () => {
     );
 };
 
-const MainChatAreaContent = ({ translations, onTranslate }) => {
+const MainChatAreaContent = ({ translations, onTranslate, onStartVoiceCall, onStartVideoCall }) => {
     const { channel } = useChatContext();
     const { typing } = useTypingContext();
     const { authUser } = useAuthUser();
@@ -787,7 +795,7 @@ const MainChatAreaContent = ({ translations, onTranslate }) => {
     return (
         <div className="flex flex-col h-full w-full bg-transparent">
             {/* Header */}
-            <CustomChatHeader />
+            <CustomChatHeader onStartVoiceCall={onStartVoiceCall} onStartVideoCall={onStartVideoCall} />
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-8 hide-scrollbar flex flex-col pt-6 pb-4 relative">
@@ -908,9 +916,17 @@ const MainChatAreaContent = ({ translations, onTranslate }) => {
 const StitchChat = () => {
     const { authUser: user, isLoading: authLoading } = useAuthUser();
     const [chatClient, setChatClient] = useState(null);
+    const [videoClient, setVideoClient] = useState(null);
     const [loading, setLoading] = useState(true);
     const [translations, setTranslations] = useState({});
     const translatingRef = useRef(new Set());
+
+    // Stream Video Call States
+    const [callScreen, setCallScreen] = useState(null); // 'incoming', 'calling', 'voice', 'video'
+    const [activeCall, setActiveCall] = useState(null);
+    const [incomingCall, setIncomingCall] = useState(null);
+    const [caller, setCaller] = useState(null);
+    const [contactUser, setContactUser] = useState(null);
 
     const handleTranslate = React.useCallback(async (message) => {
         if (!message || message.user?.id === user?.id) return;
@@ -995,8 +1011,16 @@ const StitchChat = () => {
                     if (event.message) handleTranslate(event.message);
                 });
 
+                // Init Stream Video
+                const vClient = new StreamVideoClient({
+                    apiKey: STREAM_API_KEY,
+                    user: { id: user.id, name: user.name, image: getAvatarUrl(user.avatar_url, user.name) },
+                    token: tokenData.token
+                });
+
                 if (!cleanup) {
                     setChatClient(client);
+                    setVideoClient(vClient);
                     setLoading(false);
                 }
             } catch (err) {
@@ -1012,8 +1036,81 @@ const StitchChat = () => {
         return () => {
             cleanup = true;
             client.disconnectUser();
+            if (chatClient && chatClient !== client) chatClient.disconnectUser();
+            if (videoClient) videoClient.disconnectUser();
         };
     }, [tokenData, user]);
+
+    // Listen for incoming video calls
+    useEffect(() => {
+        if (!videoClient) return;
+        const unsubscribe = videoClient.on('call.ring', async (event) => {
+            try {
+                const call = videoClient.call(event.call.type, event.call.id);
+                await call.get();
+                setIncomingCall(call);
+                setCaller(call.state.createdBy?.custom || call.state.createdBy);
+                setCallScreen('incoming');
+            } catch (e) {
+                console.error("Incoming ring error:", e);
+            }
+        });
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [videoClient]);
+
+    const startVideoCall = async (contact) => {
+        if (!videoClient || !user || !contact) return;
+        try {
+            const shortId = [user.id, contact.id]
+                .sort()
+                .join('-')
+                .replace(/-/g, '')
+                .substring(0, 50);
+            const callId = `v-${shortId}`;
+            console.log('[Call] callId length:', callId.length, callId);
+
+            const call = videoClient.call('default', callId);
+            await call.getOrCreate({
+                ring: true,
+                data: { members: [{ user_id: user.id }, { user_id: contact.id }] }
+            });
+            await call.join();
+            setContactUser(contact);
+            setActiveCall(call);
+            setCallScreen('video');
+        } catch (e) {
+            console.error("Video call failed:", e);
+            toast.error("Erro ao iniciar chamada de vídeo");
+        }
+    };
+
+    const startVoiceCall = async (contact) => {
+        if (!videoClient || !user || !contact) return;
+        try {
+            const shortId = [user.id, contact.id]
+                .sort()
+                .join('-')
+                .replace(/-/g, '')
+                .substring(0, 50);
+            const callId = `a-${shortId}`;
+            console.log('[Call] callId length:', callId.length, callId);
+
+            const call = videoClient.call('audio_room', callId);
+            await call.getOrCreate({
+                ring: true,
+                data: { members: [{ user_id: user.id }, { user_id: contact.id }] }
+            });
+            await call.join();
+            setContactUser(contact);
+            setActiveCall(call);
+            setCallScreen('voice');
+        } catch (e) {
+            console.error("Voice call failed:", e);
+            toast.error("Erro ao iniciar chamada de voz");
+        }
+    };
 
     if (authLoading || loading || !chatClient) {
         return (
@@ -1027,19 +1124,81 @@ const StitchChat = () => {
     }
 
     return (
-        <Chat client={chatClient} theme="str-chat__theme-dark">
-            <DesktopChatLayout
-                navigationSidebar={<NavigationSidebar />}
-                contactsSidebar={<ContactsSidebarContent />}
-                mainChatArea={
-                    <Channel>
-                        <Window>
-                            <MainChatAreaContent translations={translations} onTranslate={handleTranslate} />
-                        </Window>
-                    </Channel>
-                }
-            />
-        </Chat>
+        <StreamVideo client={videoClient}>
+            <Chat client={chatClient} theme="str-chat__theme-dark">
+                {/* 1. Overlays para as telas de chamadas */}
+                {callScreen === 'incoming' && incomingCall && (
+                    <IncomingCallScreen
+                        call={incomingCall}
+                        caller={caller}
+                        onAccept={async () => {
+                            await incomingCall.join();
+                            setActiveCall(incomingCall);
+                            // Identificar se é vídeo (default) ou voz (audio_room)
+                            setCallScreen(incomingCall.type === 'audio_room' ? 'voice' : 'video');
+                        }}
+                        onReject={async () => {
+                            await incomingCall.leave();
+                            await incomingCall.reject();
+                            setCallScreen(null);
+                            setIncomingCall(null);
+                        }}
+                    />
+                )}
+
+                {callScreen === 'calling' && activeCall && (
+                    <CallingScreen
+                        call={activeCall}
+                        contact={contactUser}
+                        onEnd={async () => {
+                            await activeCall.leave();
+                            setCallScreen(null);
+                        }}
+                    />
+                )}
+
+                {callScreen === 'voice' && activeCall && (
+                    <VoiceCallScreen
+                        call={activeCall}
+                        contact={contactUser}
+                        currentUser={user}
+                        onEnd={async () => {
+                            await activeCall.leave();
+                            setCallScreen(null);
+                        }}
+                    />
+                )}
+
+                {callScreen === 'video' && activeCall && (
+                    <VideoCallScreen
+                        call={activeCall}
+                        contact={contactUser}
+                        currentUser={user}
+                        onEnd={async () => {
+                            await activeCall.leave();
+                            setCallScreen(null);
+                        }}
+                    />
+                )}
+
+                <DesktopChatLayout
+                    navigationSidebar={<NavigationSidebar />}
+                    contactsSidebar={<ContactsSidebarContent />}
+                    mainChatArea={
+                        <Channel>
+                            <Window>
+                                <MainChatAreaContent
+                                    translations={translations}
+                                    onTranslate={handleTranslate}
+                                    onStartVoiceCall={startVoiceCall}
+                                    onStartVideoCall={startVideoCall}
+                                />
+                            </Window>
+                        </Channel>
+                    }
+                />
+            </Chat>
+        </StreamVideo>
     );
 };
 

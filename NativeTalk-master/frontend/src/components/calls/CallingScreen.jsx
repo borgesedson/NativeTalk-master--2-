@@ -1,80 +1,61 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, User } from 'lucide-react';
-import { getAvatarUrl } from '../../lib/utils';
+import React, { useState, useEffect } from 'react';
+import { PhoneOff } from 'lucide-react';
 
-const CallingScreen = ({ contact, onCancel }) => {
+const CallingScreen = ({ call, contact, onEnd }) => {
+    const [seconds, setSeconds] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setSeconds(s => {
+                if (s >= 30) {
+                    clearInterval(timer);
+                    onEnd();
+                    return s;
+                }
+                return s + 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [onEnd]);
+
+    const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+    const avatarUrl = contact?.avatar_url || contact?.image || `https://api.dicebear.com/7.x/initials/svg?seed=${contact?.name || 'User'}`;
+
     return (
-        <div className="fixed inset-0 z-[1000] bg-[#0D2137] text-white flex flex-col items-center justify-center p-6 font-display overflow-hidden">
-            {/* Background Ambience */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] size-[50%] bg-[#0D7377]/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-5%] left-[-5%] size-[40%] bg-[#F4845F]/5 rounded-full blur-[100px]" />
-            </div>
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-between" style={{ backgroundColor: '#0D2137' }}>
+            <div className="flex-1 flex flex-col items-center justify-center gap-8">
 
-            <div className="relative z-10 flex flex-col items-center">
-                {/* Avatar with Pulse */}
-                <div className="relative mb-8">
-                    <motion.div
-                        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                        className="absolute inset-[-40px] bg-[#0D7377]/20 rounded-full blur-2xl"
+                {/* Pulsing Avatar */}
+                <div className="relative">
+                    <div className="absolute inset-0 rounded-full animate-ping bg-white/20" style={{ animationDuration: '2s' }}></div>
+                    <img
+                        src={avatarUrl}
+                        alt={contact?.name}
+                        className="w-[120px] h-[120px] rounded-full object-cover border-4 border-white/20 relative z-10 bg-[#0A1A2F]"
                     />
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="relative size-[120px] rounded-[40px] overflow-hidden border-2 border-white/10 shadow-2xl bg-[#1a2e44] flex items-center justify-center"
-                    >
-                        {contact?.avatar_url ? (
-                            <img
-                                src={getAvatarUrl(contact.avatar_url, contact.name)}
-                                alt={contact.name}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <User className="size-16 text-[#0D7377]/40" />
-                        )}
-                    </motion.div>
                 </div>
 
-                {/* Contact Info */}
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-center"
-                >
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                        <h2 className="text-3xl font-black tracking-tight">{contact?.name || 'Iniciando...'}</h2>
-                        {contact?.native_language && (
-                            <span className="text-xl" title={contact.native_language}>
-                                {contact.native_language.toLowerCase().includes('pt') ? '🇧🇷' :
-                                    contact.native_language.toLowerCase().includes('en') ? '🇺🇸' :
-                                        contact.native_language.toLowerCase().includes('es') ? '🇪🇸' : '🌐'}
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-[#0D7377] font-black uppercase tracking-[0.2em] text-xs animate-pulse">
-                        Chamando...
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-white mb-2">{contact?.name || 'Contato'}</h2>
+                    <p className="text-gray-400 flex items-center justify-center">
+                        Chamando<span className="animate-bounce ml-1">.</span><span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span><span className="animate-bounce" style={{ animationDelay: '0.4s' }}>.</span>
                     </p>
-                </motion.div>
+                </div>
+
+                <div className="font-mono text-white/50 text-xl font-medium tracking-widest mt-4">
+                    {formatTime(seconds)}
+                </div>
             </div>
 
-            {/* Controls Container */}
-            <motion.div
-                initial={{ y: 100, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="absolute bottom-20 flex flex-col items-center gap-8"
-            >
+            <div className="pb-16 w-full flex justify-center">
                 <button
-                    onClick={onCancel}
-                    className="size-20 bg-[#F4845F] text-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-[#F4845F]/20 hover:scale-110 active:scale-90 transition-all group"
+                    onClick={onEnd}
+                    className="w-[64px] h-[64px] rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-transform hover:scale-105 active:scale-95"
                 >
-                    <X className="size-8 group-hover:rotate-90 transition-transform duration-300" />
+                    <PhoneOff className="w-8 h-8" />
                 </button>
-                <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">Cancelar Chamada</span>
-            </motion.div>
+            </div>
         </div>
     );
 };

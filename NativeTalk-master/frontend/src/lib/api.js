@@ -698,32 +698,37 @@ export const transcribeAudio = async (audioUrl, targetLanguage = 'en', sourceLan
   }
 };
 
-export const uploadAudio = async (blob) => {
-  const filename = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webm`
+export const uploadAudio = async (blob, mimeType = 'audio/webm;codecs=opus') => {
+  const { data: { session } } = await insforge.auth.getCurrentSession();
+  if (!session) {
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
 
-  // Try upload
+  const ext = mimeType.includes('ogg') ? 'ogg' :
+    mimeType.includes('mp4') ? 'mp4' : 'webm';
+  const filename = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
+
   const { data, error } = await insforge.storage
     .from('audio-messages')
-    .upload(filename, blob, {
-      contentType: 'audio/webm',
-      upsert: false
-    })
+    .upload(filename, blob, { contentType: mimeType, upsert: false });
 
-  console.log('[Upload] Full response data:', JSON.stringify(data))
-  console.log('[Upload] Full response error:', JSON.stringify(error))
+  console.log('[Upload] data:', JSON.stringify(data));
+  console.log('[Upload] error:', JSON.stringify(error));
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (error.statusCode === 401) {
+      window.location.href = '/login';
+      throw new Error('Session expired - please login again');
+    }
+    throw new Error(error.message);
+  }
 
-  // Try all possible path structures
-  const path = data?.path || data?.Key || data?.key || filename
-  console.log('[Upload] Using path:', path)
+  // Insforge returns URL in data.url directly
+  const publicUrl = data?.url || data?.publicUrl || data?.Key;
 
-  // Get public URL
-  const { data: urlData } = insforge.storage
-    .from('audio-messages')
-    .getPublicUrl(path)
+  console.log('[Upload] publicUrl:', publicUrl);
 
-  console.log('[Upload] urlData:', JSON.stringify(urlData))
-
-  return { url: urlData?.publicUrl || urlData?.url || urlData?.signedUrl }
-}
+  if (!publicUrl) throw new Error('Failed to get public URL');
+  return publicUrl;
+};

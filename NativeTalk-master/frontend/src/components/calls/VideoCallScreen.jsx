@@ -1,115 +1,180 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, CameraOff, Mic, MicOff, PhoneOff, Maximize, Minimize, User } from 'lucide-react';
-import { getAvatarUrl } from '../../lib/utils';
+import React, { useState, useEffect } from 'react';
+import { Camera, CameraOff, Mic, MicOff, PhoneOff, MessageSquare, Globe } from 'lucide-react';
+import { useCallStateHooks, ParticipantView, StreamCall } from '@stream-io/video-react-sdk';
 
-const VideoCallScreen = ({ contact, localStream, remoteStream, onEndCall, subtitle, isMuted, onToggleMute, isCameraOff, onToggleCamera }) => {
-    const [isFullScreen, setIsFullScreen] = useState(false);
+const VideoCallScreen = ({ call, contact, currentUser, onEnd }) => {
+    if (!call) {
+        return (
+            <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black">
+                <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-teal-500 animate-spin mb-4"></div>
+                <p className="text-white/60 font-medium animate-pulse">Conectando vídeo...</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="fixed inset-0 z-[600] bg-black text-white flex flex-col font-display overflow-hidden">
-            {/* Remote Video (Full Screen) */}
-            <div className="absolute inset-0 bg-[#0D2137]">
-                {remoteStream ? (
-                    <video
-                        srcObject={remoteStream}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                    />
+        <StreamCall call={call}>
+            <VideoCallContent call={call} contact={contact} currentUser={currentUser} onEnd={onEnd} />
+        </StreamCall>
+    );
+};
+
+const VideoCallContent = ({ call, contact, currentUser, onEnd }) => {
+    const { useLocalParticipant, useRemoteParticipants, useMicrophoneState, useCameraState } = useCallStateHooks();
+    const localParticipant = useLocalParticipant();
+    const remoteParticipants = useRemoteParticipants();
+    const remoteParticipant = remoteParticipants[0];
+
+    const { microphone, isMute } = useMicrophoneState();
+    const { camera, isEnabled: isCameraEnabled } = useCameraState();
+
+    const [receivedSubtitle, setReceivedSubtitle] = useState('');
+    const [originalText, setOriginalText] = useState('');
+
+    // Timer
+    const [seconds, setSeconds] = useState(0);
+    const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+    useEffect(() => {
+        const timer = setInterval(() => setSeconds(s => s + 1), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    // Subtitles (Web Speech API)
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = currentUser?.native_language || 'en-US';
+
+        recognition.onresult = async (event) => {
+            const transcript = Array.from(event.results).map(r => r[0].transcript).join('');
+            setOriginalText(transcript);
+
+            try {
+                const res = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: transcript,
+                        from: currentUser?.native_language || 'en',
+                        to: contact?.native_language || 'pt'
+                    })
+                });
+                const { translated } = await res.json();
+                if (translated) {
+                    await call.sendCustomEvent({
+                        type: 'subtitle',
+                        data: { text: translated, original: transcript }
+                    });
+                }
+            } catch (e) { }
+        };
+
+        if (!isMute) {
+            try { recognition.start(); } catch (e) { }
+        }
+
+        return () => {
+            try { recognition.stop(); } catch (e) { }
+        };
+    }, [isMute, currentUser, contact, call]);
+
+    // Receive Subtitles
+    useEffect(() => {
+        if (!call) return;
+        const unsubscribe = call.on('custom', (event) => {
+            if (event.type === 'subtitle') {
+                setReceivedSubtitle(event.data.text);
+            }
+        });
+        return unsubscribe;
+    }, [call]);
+
+    return (
+        <div className="fixed inset-0 z-[9999] bg-black overflow-hidden flex flex-col font-sans">
+            {/* Remote Video Background */}
+            <div className="absolute inset-0 z-0">
+                {remoteParticipant ? (
+                    <ParticipantView participant={remoteParticipant} mirror={false} />
                 ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-6 bg-gradient-to-br from-[#0D2137] to-[#0a1a2a]">
-                        <motion.div
-                            animate={{ scale: [1, 1.05, 1] }}
-                            transition={{ repeat: Infinity, duration: 3 }}
-                            className="size-40 bg-white/5 rounded-[3rem] flex items-center justify-center border border-white/10"
-                        >
-                            <User className="size-20 text-white/10" />
-                        </motion.div>
-                        <div className="text-center">
-                            <h3 className="text-2xl font-black">{contact?.name || 'Conectando...'}</h3>
-                            <p className="text-[#0D7377] font-bold text-sm tracking-widest uppercase">Aguardando vídeo</p>
-                        </div>
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#0D2137] to-black">
+                        <div className="w-32 h-32 rounded-full border-4 border-white/20 border-t-teal-500 animate-spin mb-8"></div>
+                        <p className="text-white/60 text-xl font-medium animate-pulse">Aguardando vídeo de {contact?.name}...</p>
                     </div>
                 )}
             </div>
 
-            {/* Local Video (PiP) */}
-            <motion.div
-                drag
-                dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
-                className="absolute bottom-24 right-6 size-32 md:size-48 rounded-3xl overflow-hidden border-2 border-white/20 bg-black/40 backdrop-blur-xl shadow-2xl z-50 cursor-grab active:cursor-grabbing"
-            >
-                {isCameraOff ? (
-                    <div className="w-full h-full flex items-center justify-center bg-black/60">
-                        <CameraOff className="size-8 text-white/20" />
-                    </div>
+            {/* Top Bar */}
+            <div className="absolute top-0 inset-x-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent pt-12 pb-24 px-6 flex justify-between items-start z-20 pointer-events-none">
+                <div className="flex flex-col gap-2">
+                    <h2 className="text-2xl font-bold text-white drop-shadow-lg flex items-center gap-3">
+                        {contact?.name}
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/30 text-teal-400 text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-teal-500/40">
+                            <Globe className="w-3.5 h-3.5" /> Tradução Ativa
+                        </div>
+                    </h2>
+                    <p className="text-white/90 font-mono text-lg drop-shadow-md font-medium tracking-wide">
+                        {formatTime(seconds)} • {contact?.native_language === 'pt' ? '🇧🇷 Português' : '🇺🇸 Inglês'}
+                    </p>
+                </div>
+            </div>
+
+            {/* Local Video PiP */}
+            <div className="absolute top-12 right-6 w-[110px] h-[160px] md:w-[160px] md:h-[220px] rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.6)] border-2 border-white/20 z-20 bg-gray-900 pointer-events-auto transition-transform hover:scale-105 cursor-pointer">
+                {localParticipant ? (
+                    <ParticipantView participant={localParticipant} mirror={true} />
                 ) : (
-                    <video
-                        srcObject={localStream}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="w-full h-full object-cover"
-                    />
+                    <div className="w-full h-full flex items-center justify-center bg-gray-900/80 text-sm font-medium text-white/50">Você</div>
                 )}
-                <div className="absolute top-2 right-2 size-2 bg-[#0D7377] rounded-full shadow-[0_0_8px_rgba(13,115,119,0.8)]" />
-            </motion.div>
+            </div>
 
             {/* Subtitles Overlay */}
-            <AnimatePresence>
-                {subtitle && (
-                    <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 20, opacity: 0 }}
-                        className="absolute bottom-32 inset-x-6 z-40 flex justify-center"
-                    >
-                        <div className="max-w-2xl bg-black/70 backdrop-blur-2xl border border-white/10 p-5 rounded-[1.5rem] shadow-2xl">
-                            <p className="text-lg md:text-xl font-bold text-white text-center leading-relaxed">
-                                {subtitle}
-                            </p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <div className="absolute bottom-40 inset-x-0 px-4 md:px-20 z-20 pointer-events-none flex flex-col justify-end items-center">
+                {receivedSubtitle ? (
+                    <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.7)] animate-fadeIn max-w-3xl w-full text-center">
+                        <p className="text-teal-400 font-medium tracking-wide text-[13px] mb-2 uppercase">{contact?.name} disse:</p>
+                        <p className="text-white font-bold text-2xl md:text-4xl leading-snug drop-shadow-lg">{receivedSubtitle}</p>
+                    </div>
+                ) : originalText ? (
+                    <div className="bg-black/50 backdrop-blur-md border border-white/5 rounded-2xl p-4 shadow-xl animate-fadeIn max-w-xl self-end mr-6 opacity-80">
+                        <p className="text-white/50 text-xs mb-1">Ouvindo você...</p>
+                        <p className="text-white/90 text-sm">{originalText}</p>
+                    </div>
+                ) : null}
+            </div>
 
-            {/* Controls Container */}
-            <motion.footer
-                initial={{ y: 100 }}
-                animate={{ y: 0 }}
-                className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-center p-6"
-            >
-                <div className="bg-white/10 backdrop-blur-3xl border border-white/10 p-3 rounded-[35px] flex items-center gap-4 shadow-2xl">
-                    <button
-                        onClick={onToggleMute}
-                        className={`size-12 rounded-2xl flex items-center justify-center transition-all ${isMuted ? 'bg-red-500/20 text-red-500' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
-                    >
-                        {isMuted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
-                    </button>
+            {/* Controls Bar */}
+            <div className="absolute bottom-8 inset-x-6 md:inset-x-24 bg-black/50 backdrop-blur-2xl border border-white/10 rounded-[40px] px-6 py-5 flex justify-between md:justify-center md:gap-12 items-center z-20 shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto">
 
-                    <button
-                        onClick={onToggleCamera}
-                        className={`size-12 rounded-2xl flex items-center justify-center transition-all ${isCameraOff ? 'bg-red-500/20 text-red-500' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
-                    >
-                        {isCameraOff ? <CameraOff className="size-5" /> : <Camera className="size-5" />}
-                    </button>
+                <button
+                    onClick={() => camera.toggle()}
+                    className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${!isCameraEnabled ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10 hover:scale-105'}`}
+                >
+                    {!isCameraEnabled ? <CameraOff className="w-6 h-6" /> : <Camera className="w-6 h-6" />}
+                </button>
 
-                    <button
-                        onClick={onEndCall}
-                        className="size-16 bg-[#F4845F] text-white rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-[#F4845F]/20 hover:scale-110 active:scale-95 transition-all"
-                    >
-                        <PhoneOff className="size-7 stroke-[3px]" />
-                    </button>
+                <button
+                    onClick={() => microphone.toggle()}
+                    className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${isMute ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10 hover:scale-105'}`}
+                >
+                    {isMute ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                </button>
 
-                    <button
-                        onClick={() => setIsFullScreen(!isFullScreen)}
-                        className="size-12 bg-white/5 text-white/70 rounded-2xl flex items-center justify-center hover:bg-white/10 transition-all text-xs font-black"
-                    >
-                        {isFullScreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
-                    </button>
-                </div>
-            </motion.footer>
+                <button
+                    onClick={onEnd}
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-[32px] bg-red-600 hover:bg-red-500 flex items-center justify-center text-white shadow-[0_0_40px_rgba(220,38,38,0.6)] transition-all duration-300 hover:scale-110 active:scale-95 border-4 border-red-400/30 mx-2"
+                >
+                    <PhoneOff className="w-8 h-8 md:w-10 md:h-10 fill-white" />
+                </button>
+
+                <button className="w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all duration-300 bg-white/10 text-white hover:bg-white/20 border border-white/10 shadow-lg hover:scale-105">
+                    <MessageSquare className="w-6 h-6" />
+                </button>
+
+            </div>
         </div>
     );
 };

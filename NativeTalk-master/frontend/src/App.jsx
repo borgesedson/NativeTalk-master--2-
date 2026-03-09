@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router';
 import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from 'react-error-boundary';
