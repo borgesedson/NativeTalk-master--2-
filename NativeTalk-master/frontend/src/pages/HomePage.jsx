@@ -116,7 +116,7 @@ const HomePage = () => {
 
   const getOtherMember = (channel) => {
     const members = Object.values(channel.state.members);
-    return members.find(member => member.user?.id !== authUser.id)?.user;
+    return members.find(member => member.user?.id !== authUser?.id)?.user;
   };
 
   const filteredChannels = channels.filter(channel => {

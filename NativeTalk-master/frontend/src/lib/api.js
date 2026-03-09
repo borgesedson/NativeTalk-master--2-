@@ -698,40 +698,32 @@ export const transcribeAudio = async (audioUrl, targetLanguage = 'en', sourceLan
   }
 };
 
-export const uploadAudio = async (audioBlob, fileName = `audio_${Date.now()}.webm`) => {
-  try {
-    const filename = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webm`;
-    console.log('[Upload] Starting upload:', filename, 'size:', audioBlob.size);
+export const uploadAudio = async (blob) => {
+  const filename = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webm`
 
-    const { data, error } = await storage
-      .from('audio-messages')
-      .upload(filename, audioBlob, {
-        contentType: 'audio/webm',
-        cacheControl: '3600',
-        upsert: false
-      });
+  // Try upload
+  const { data, error } = await insforge.storage
+    .from('audio-messages')
+    .upload(filename, blob, {
+      contentType: 'audio/webm',
+      upsert: false
+    })
 
-    if (error) {
-      console.error('[Upload] Error:', error);
-      throw new Error('Upload failed: ' + error.message);
-    }
+  console.log('[Upload] Full response data:', JSON.stringify(data))
+  console.log('[Upload] Full response error:', JSON.stringify(error))
 
-    console.log('[Upload] Success, path:', data?.path);
+  if (error) throw new Error(error.message)
 
-    const { data: urlData } = storage
-      .from('audio-messages')
-      .getPublicUrl(data.path);
+  // Try all possible path structures
+  const path = data?.path || data?.Key || data?.key || filename
+  console.log('[Upload] Using path:', path)
 
-    console.log('[Upload] URL data:', urlData);
+  // Get public URL
+  const { data: urlData } = insforge.storage
+    .from('audio-messages')
+    .getPublicUrl(path)
 
-    if (!urlData?.publicUrl) {
-      throw new Error('Failed to get public URL');
-    }
+  console.log('[Upload] urlData:', JSON.stringify(urlData))
 
-    console.log('[Upload] Public URL:', urlData.publicUrl);
-    return { url: urlData.publicUrl };
-  } catch (error) {
-    console.error('[Upload] Error in uploadAudio:', error);
-    throw error;
-  }
-};
+  return { url: urlData?.publicUrl || urlData?.url || urlData?.signedUrl }
+}

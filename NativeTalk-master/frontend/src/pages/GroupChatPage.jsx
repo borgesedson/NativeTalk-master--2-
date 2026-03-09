@@ -149,7 +149,7 @@ const GroupChatPage = () => {
 
                 await client.connectUser(
                     {
-                        id: authUser.id,
+                        id: authUser?.id,
                         name: authUser.name,
                         image: getAvatarUrl(authUser.avatar_url, authUser.name),
                     },
@@ -168,7 +168,7 @@ const GroupChatPage = () => {
                     const message = event.message;
                     if (!message || !message.text) return;
 
-                    const isOwnMessage = message.user.id === authUser.id || message.user?.id === client.userID;
+                    const isOwnMessage = message.user.id === authUser?.id || message.user?.id === client.userID;
                     if (isOwnMessage) return;
 
                     if (event.type === "message.new") {
@@ -201,7 +201,7 @@ const GroupChatPage = () => {
                 currChannel.on("message.new", handleNewMessage);
 
                 (currChannel.state.messages || []).forEach((m) => {
-                    if (m.user.id !== authUser.id && m.text) {
+                    if (m.user.id !== authUser?.id && m.text) {
                         handleNewMessage({ message: m, type: "message.read" });
                     }
                 });

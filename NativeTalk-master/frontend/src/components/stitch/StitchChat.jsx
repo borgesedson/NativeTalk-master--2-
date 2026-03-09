@@ -641,7 +641,8 @@ const CustomMessageInputUI = () => {
             });
 
             // 2. Upload para Storage (URL pública)
-            const { url: audioUrl } = await uploadAudio(audioBlob);
+            const uploadResult = await uploadAudio(audioBlob);
+            const audioUrl = uploadResult?.url || uploadResult;
             if (!audioUrl) throw new Error("Erro ao fazer upload do áudio");
 
             toast.loading('🌐 Traduzindo...', { id: toastId });
@@ -667,13 +668,15 @@ const CustomMessageInputUI = () => {
 
             toast.loading('Enviando...', { id: toastId });
 
+            console.log('[Send] audioUrl type:', typeof audioUrl, 'value:', audioUrl);
+
             await channel.sendMessage({
-                text: transcript,
+                text: transcript || '',
                 originalLanguage: authUser?.native_language || 'pt',
                 translation: translatedText,
                 attachments: [{
                     type: 'audio',
-                    asset_url: audioUrl,
+                    asset_url: String(audioUrl),
                     title: 'Áudio',
                     duration,
                     transcription: transcript,

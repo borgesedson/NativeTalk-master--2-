@@ -49,26 +49,47 @@ const AudioRecorder = ({ onSendAudio, disabled }) => {
   const startRecording = async () => {
     if (disabled) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true
+        }
+      });
+
+      // Try formats in order of compatibility
+      let mimeType = 'audio/ogg;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/ogg';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm;codecs=opus';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+      }
+
+      console.log('[Audio] Using format:', mimeType);
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       const chunks = [];
 
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const blob = new Blob(chunks, { type: mimeType });
+        console.log('[Audio] Blob size:', blob.size, 'type:', blob.type);
         setAudioBlob(blob);
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
         stream.getTracks().forEach(t => t.stop());
-
-        // Auto-send or let user preview? The user requested handleAudioSend(blob) in onstop
-        // but also showed a preview UI. I'll stick to preview+send for premium feel but 
-        // ensure the blob is ready.
-        console.log("Audio recording stopped, blob ready:", blob.size);
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(100); // collect data every 100ms
       setIsRecording(true);
       setRecordingTime(0);
       timerRef.current = setInterval(() => {
