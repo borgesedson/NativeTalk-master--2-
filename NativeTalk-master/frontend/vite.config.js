@@ -5,13 +5,15 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
+    allowedHosts: true,
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
     proxy: {
       "/api": {
-        target: "http://localhost:5001",
+        target: "https://motor-diary-micro-latex.trycloudflare.com",
         changeOrigin: true,
+        secure: true
       },
     },
   },

@@ -11,7 +11,7 @@
 html,
 body,
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   background-color: #0A1A2F;
   color: #ffffff;
@@ -32,13 +32,13 @@ h3,
 }
 
 .screen {
-  min-height: 100vh;
+  min-height: 100dvh;
   padding-bottom: 80px;
   /* Space for BottomNav */
 }
 
 .screen-no-nav {
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* --- Premium Organic Design System --- */
@@ -297,7 +297,7 @@ h3,
 
 /* ✅ BOTÕES - NÃO ESCONDER */
 .str-chat__send-button {
-  background: #10b981 !important;
+  background: #0D7377 !important;
   border-radius: 50% !important;
   width: 44px !important;
   height: 44px !important;
@@ -314,7 +314,7 @@ h3,
 }
 
 .str-chat__send-button:hover {
-  background: #059669 !important;
+  background: #09595d !important;
 }
 
 .str-chat__send-button svg {
@@ -378,7 +378,7 @@ h3,
     top: 0 !important;
     left: 0 !important;
     width: 280px !important;
-    height: 100vh !important;
+    height: 100dvh !important;
     background: white !important;
     z-index: 9999 !important;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
@@ -440,7 +440,7 @@ h3,
 
   .str-chat__message-input,
   .wa-message-input-wrapper {
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 20px)) !important;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 20px)) !important;
   }
 }
 
@@ -518,7 +518,7 @@ img {
     top: 0 !important;
     left: 0 !important;
     width: 280px !important;
-    height: 100vh !important;
+    height: 100dvh !important;
     background: white !important;
     z-index: 9999 !important;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
@@ -541,7 +541,7 @@ img {
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.5);
     z-index: 9998;
     display: none;

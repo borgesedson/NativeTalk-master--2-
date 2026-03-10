@@ -25,14 +25,18 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3002",
-      "https://nativetalk-thlm.onrender.com",
-    ],
+    origin: function (origin, callback) {
+      if (!origin || process.env.NODE_ENV !== "production") {
+        return callback(null, true);
+      }
+      const allowedOrigins = [
+        "https://nativetalk-thlm.onrender.com",
+      ];
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Origin not allowed by CORS'), false);
+    },
     credentials: true
   }
 });
@@ -226,10 +230,47 @@ app.post('/api/translate', async (req, res) => {
 
     const data = await response.json();
     console.log(`[SERVER TRANSLATE] VPS result: "${data.translated?.substring(0, 40)}"`);
-    // VPS returns { from, to, original, translated }
+
+    const translated = data.translated || text;
+
+    // Confidence helper
+    const editDistance = (s1, s2) => {
+      s1 = s1.toLowerCase();
+      s2 = s2.toLowerCase();
+      let costs = new Array();
+      for (let i = 0; i <= s1.length; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= s2.length; j++) {
+          if (i == 0) costs[j] = j;
+          else {
+            if (j > 0) {
+              let newValue = costs[j - 1];
+              if (s1.charAt(i - 1) != s2.charAt(j - 1))
+                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+              costs[j - 1] = lastValue;
+              lastValue = newValue;
+            }
+          }
+        }
+        if (i > 0) costs[s2.length] = lastValue;
+      }
+      return costs[s2.length];
+    }
+
+    const similarity = (a, b) => {
+      if (!a || !b) return 0
+      const longer = a.length > b.length ? a : b
+      const shorter = a.length > b.length ? b : a
+      if (longer.length === 0) return 1.0
+      return (longer.length - editDistance(longer, shorter)) / longer.length
+    }
+
+    const confidence = 1 - similarity(text, translated);
+
     res.json({
-      translated: data.translated || text,
-      translatedText: data.translated || text
+      translated: translated,
+      translatedText: translated,
+      confidence: Math.round(confidence * 100)
     });
   } catch (error) {
     console.error('[API Proxy] Error:', error.message);

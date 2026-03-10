@@ -27,12 +27,14 @@ const ContactsPage = () => {
   const { data: friends = [], isLoading: loadingFriends } = useQuery({
     queryKey: ["friends"],
     queryFn: getFriends,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: recommendedUsers = [], isLoading: loadingUsers } = useQuery({
     queryKey: ["users"],
     queryFn: getRecommendedUsers,
-    enabled: activeTab === 'discover' && !searchQuery
+    enabled: activeTab === 'discover' && !searchQuery,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Debounced Search Effect

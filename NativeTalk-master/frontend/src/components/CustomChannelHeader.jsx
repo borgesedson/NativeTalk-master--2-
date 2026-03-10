@@ -22,16 +22,16 @@ const CustomChannelHeader = ({ handleVideoCall }) => {
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="flex items-center justify-between px-4 py-3 border-b border-primary/20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-10">
-      <div className="flex items-center gap-3">
+    <header className="flex items-center justify-between px-3 py-2 border-b border-primary/20 bg-background-light dark:bg-background-dark sticky top-0 z-10 pt-[calc(12px+env(safe-area-inset-top))]">
+      <div className="flex items-center gap-2 overflow-hidden flex-1">
         <button
           onClick={() => navigate('/messages')}
-          className="p-1 hover:bg-slate-200 dark:hover:bg-primary/20 rounded-full transition-colors organic-press"
+          className="flex items-center justify-center min-w-[48px] min-h-[48px] hover:bg-slate-200 dark:hover:bg-primary/20 rounded-full transition-colors organic-press mr-1 touch-manipulation"
         >
-          <span className="material-symbols-outlined text-slate-700 dark:text-slate-300">arrow_back</span>
+          <span className="material-symbols-outlined text-slate-700 dark:text-slate-300 transform scale-[1.2]">arrow_back</span>
         </button>
 
-        <div className="relative">
+        <div className="relative shrink-0">
           <div className="size-10 rounded-full bg-primary/20 overflow-hidden border border-primary/30 flex items-center justify-center">
             {displayImage ? (
               <img
@@ -50,26 +50,31 @@ const CustomChannelHeader = ({ handleVideoCall }) => {
           )}
         </div>
 
-        <div className="flex flex-col">
-          <h1 className="text-sm font-bold leading-none text-slate-900 dark:text-slate-100">{displayName}</h1>
-          <span className="text-[10px] text-primary font-medium mt-1 bg-primary/10 px-2 py-0.5 rounded-full inline-block">
-            🌐 Traduzindo {sourceLang}→{targetLang}
+        <div className="flex flex-col flex-1 min-w-0 pr-2">
+          <h1 className="text-base font-bold leading-tight text-white whitespace-nowrap overflow-hidden text-ellipsis">{displayName}</h1>
+          <span className="text-xs text-[#2ECC71] mt-0.5">
+            {isOnline ? 'Online' : 'Offline'} • 🌐 {sourceLang}→{targetLang}
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center shrink-0">
         <button
           onClick={() => startCall(otherMember?.user_id, 'video')}
-          className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-primary/20 rounded-full transition-colors organic-press"
+          className="min-w-[48px] min-h-[48px] text-white hover:bg-white/10 rounded-full transition-colors organic-press flex items-center justify-center touch-manipulation"
         >
-          <span className="material-symbols-outlined">videocam</span>
+          <span className="material-symbols-outlined text-[20px]">videocam</span>
         </button>
         <button
           onClick={() => startCall(otherMember?.user_id, 'voice')}
-          className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-primary/20 rounded-full transition-colors organic-press"
+          className="min-w-[48px] min-h-[48px] text-white hover:bg-white/10 rounded-full transition-colors organic-press flex items-center justify-center touch-manipulation"
         >
-          <span className="material-symbols-outlined">call</span>
+          <span className="material-symbols-outlined text-[20px]">call</span>
+        </button>
+        <button
+          className="min-w-[48px] min-h-[48px] text-white hover:bg-white/10 rounded-full transition-colors organic-press flex items-center justify-center touch-manipulation"
+        >
+          <span className="material-symbols-outlined text-[20px]">more_vert</span>
         </button>
       </div>
     </header>

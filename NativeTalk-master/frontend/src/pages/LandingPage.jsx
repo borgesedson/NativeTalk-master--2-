@@ -49,8 +49,18 @@ const LandingPage = () => {
       {/* 🌟 NAVBAR */}
       <nav className="fixed top-0 left-0 w-full z-50 bg-[#0b1213]/80 backdrop-blur-md border-b border-white/5 py-4 px-6 md:px-12 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="size-8 rounded-lg bg-[#0D7377] flex items-center justify-center shadow-lg shadow-[#0D7377]/30">
-            <span className="material-symbols-outlined text-white text-[18px]">public</span>
+          <div className="flex items-center justify-center w-8 h-8 bg-[#1C1929] border border-white/10 rounded-[8px] shadow-lg shadow-[#704FF7]/20 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#704FF7]/20 to-transparent"></div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
+              <path d="M4 14C4 16.2091 5.79086 18 8 18H9V21L13.5 18H16C18.2091 18 20 16.2091 20 14V8C20 5.79086 18.2091 4 16 4H8C5.79086 4 4 5.79086 4 8V14Z" stroke="url(#chat-landing)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8 11H16M10 7H14" stroke="url(#chat-landing)" strokeWidth="2.5" strokeLinecap="round" />
+              <defs>
+                <linearGradient id="chat-landing" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#A688FA" />
+                  <stop offset="1" stopColor="#704FF7" />
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
           <span className="text-xl font-bold tracking-tight text-white">NativeTalk</span>
         </div>
@@ -285,8 +295,18 @@ const LandingPage = () => {
       <footer className="border-t border-white/5 py-12 px-6 md:px-12 bg-[#0b1213]">
         <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="size-6 rounded bg-[#0D7377] flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-[14px]">public</span>
+            <div className="flex items-center justify-center w-6 h-6 bg-[#1C1929] border border-white/10 rounded-[6px] shadow-lg shadow-[#704FF7]/20 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#704FF7]/20 to-transparent"></div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
+                <path d="M4 14C4 16.2091 5.79086 18 8 18H9V21L13.5 18H16C18.2091 18 20 16.2091 20 14V8C20 5.79086 18.2091 4 16 4H8C5.79086 4 4 5.79086 4 8V14Z" stroke="url(#chat-footer)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M8 11H16M10 7H14" stroke="url(#chat-footer)" strokeWidth="3" strokeLinecap="round" />
+                <defs>
+                  <linearGradient id="chat-footer" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#A688FA" />
+                    <stop offset="1" stopColor="#704FF7" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
             <span className="text-[15px] font-bold text-white">NativeTalk</span>
           </div>

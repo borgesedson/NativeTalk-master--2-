@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { uploadAudio, transcribeAudio } from '../lib/api'; // Import API helpers
 import toast from 'react-hot-toast';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const SOCKET_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:5001` : 'http://localhost:5001');
 
 export const useSocketChat = (receiverId) => {
     const { user, token } = useAuth();

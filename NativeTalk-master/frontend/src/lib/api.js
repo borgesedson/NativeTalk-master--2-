@@ -82,6 +82,8 @@ export const verifyOTP = async (email, otp) => {
 
 export const logout = async () => {
   try {
+    localStorage.removeItem('stream_chat_token');
+    localStorage.removeItem('stream_chat_token_time');
     await auth.signOut();
   } catch (error) {
     console.error('Erro no logout:', error);
@@ -92,14 +94,14 @@ let profileAutoCreated = false;
 
 export const getCurrentUser = async () => {
   try {
-    const { data: authData, error: authError } = await auth.getCurrentUser();
-    if (authError || !authData?.user) return null;
-    const user = authData.user;
+    const { data, error } = await auth.getCurrentUser();
+    const user = data?.user || data;
+
+    console.log('[Auth] Final user extracted:', user?.id);
+    if (error || !user) return null;
 
     // 🔍 DEBUG: Full profile dump
-    const { data: rawProfile } = await db.from('profiles').select('*').eq('id', user.id).maybeSingle();
-    console.log('[APP LOAD] Full DB profile:', JSON.stringify(rawProfile, null, 2));
-    console.log('[APP LOAD] Auth metadata:', JSON.stringify(user.user_metadata, null, 2));
+    console.log('[APP LOAD] Auth user retrieved');
 
     // Buscar perfil do banco usando maybeSingle (retorna null sem erro)
     const { data: dbProfile, error: dbError } = await db
@@ -110,8 +112,25 @@ export const getCurrentUser = async () => {
 
     if (dbError) {
       console.warn('DB profile fetch warning:', dbError.message);
-    }
+      // Prevent zombie sessions: If the user's JWT is fully expired, force a logout instead of fallback.
+      if (dbError.message?.includes('JWT') || dbError.code === 'PGRST301') {
+        await auth.signOut();
+        return null;
+      }
 
+      // If it's a transient db error, DO NOT auto-create to prevent wiping data!
+      // Return a safe fallback from user_metadata instead.
+      const fallbackLang = getLanguageCode(user.user_metadata?.native_language || 'en');
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+        native_language: fallbackLang,
+        avatar_url: user.user_metadata?.avatar_url || '',
+        bio: '',
+        location: '',
+      };
+    }
 
     // Se perfil existe no banco, retornar direto (fonte de verdade)
     if (dbProfile) {
@@ -121,11 +140,11 @@ export const getCurrentUser = async () => {
         ...dbProfile,
         native_language: getLanguageCode(dbProfile.native_language),
       };
-      console.log('[Auth] User language:', result.native_language);
+      console.log('[APP LOAD] Profile matched DB');
       return result;
     }
 
-    // Se não existe no banco e ainda não tentamos criar nesta sessão
+    // Se não existe no banco, e dbError é null (realmente não existe) e não tentamos criar...
     if (!profileAutoCreated) {
       profileAutoCreated = true;
       const meta = user.user_metadata || {};
@@ -140,17 +159,17 @@ export const getCurrentUser = async () => {
         onboarded: false
       };
 
-
       try {
-        await db.from('profiles').upsert(newProfile);
+        // Use insert carefully so we never wipe existing row accidentally
+        await db.from('profiles').insert([newProfile]);
       } catch (e) {
-        console.warn('Auto-create profile failed:', e.message);
+        console.warn('Auto-create profile failed (might exist):', e.message);
       }
 
       return { id: user.id, ...newProfile };
     }
 
-    // Fallback: retornar dados mínimos do auth
+    // Fallback minimal
     const fallbackLang = getLanguageCode(user.user_metadata?.native_language || 'en');
     return {
       id: user.id,
@@ -584,10 +603,30 @@ export const getGroups = async () => {
 
 export const getStreamToken = async () => {
   try {
+    const CACHE_KEY = 'stream_chat_token';
+    const CACHE_TIME_KEY = 'stream_chat_token_time';
+    const CACHE_EXPIRY = 20 * 60 * 1000; // 20 minutes
+
+    const cachedToken = localStorage.getItem(CACHE_KEY);
+    const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+
+    if (cachedToken && cachedTime && (Date.now() - parseInt(cachedTime, 10)) < CACHE_EXPIRY) {
+      console.log('[Auth] Using cached Stream token');
+      return { token: cachedToken };
+    }
+
+    console.log('[Auth] Fetching fresh Stream token from Edge Function...');
     const { data, error } = await insforge.functions.invoke('get-stream-token');
     if (error) throw error;
+
+    if (data?.token) {
+      localStorage.setItem(CACHE_KEY, data.token);
+      localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+    }
+
     return data;
   } catch (error) {
+    console.error("Token fetch error:", error);
     throw new Error(error.message || "Erro ao obter token de chat");
   }
 };
@@ -635,7 +674,8 @@ export const translateMessage = async (text, targetUserId, forcedTargetLang = nu
           translation: { text: translated, language: targetLang },
           sourceLanguage: sourceLang,
           targetLanguage: targetLang,
-          translatedText: translated
+          translatedText: translated,
+          confidence: data.confidence
         };
       } else {
         const errData = await response.json().catch(() => ({}));

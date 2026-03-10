@@ -2,7 +2,11 @@ import React from 'react';
 import { Phone, PhoneOff, Globe } from 'lucide-react';
 
 const IncomingCallScreen = ({ call, caller, onAccept, onReject }) => {
-    const avatarUrl = caller?.image || caller?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${caller?.name || 'User'}`;
+    if (!call) return null;
+
+    const callerName = caller?.name || caller?.id || 'Alguém';
+    const callerImage = caller?.image || caller?.avatar_url;
+    const avatarUrl = callerImage || `https://api.dicebear.com/7.x/initials/svg?seed=${callerName}`;
 
     return (
         <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-between backdrop-blur-xl" style={{ backgroundColor: 'rgba(13,33,55,0.97)' }}>
@@ -13,13 +17,13 @@ const IncomingCallScreen = ({ call, caller, onAccept, onReject }) => {
                     <div className="absolute inset-0 rounded-full animate-ping bg-teal-500/40" style={{ animationDuration: '1.5s' }}></div>
                     <img
                         src={avatarUrl}
-                        alt={caller?.name || 'Caller'}
+                        alt={callerName}
                         className="w-[120px] h-[120px] rounded-full object-cover border-4 border-teal-500 relative z-10 bg-[#0A1A2F]"
                     />
                 </div>
 
                 <div className="text-center mt-6">
-                    <h2 className="text-2xl font-bold text-white mb-2">{caller?.name || 'Alguém'}</h2>
+                    <h2 className="text-2xl font-bold text-white mb-2">{callerName}</h2>
                     <p className="text-gray-400 mb-8">está te chamando</p>
 
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-500/20 text-teal-400 text-sm font-medium border border-teal-500/30">

@@ -5,9 +5,15 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
+import LandingPage from './pages/LandingPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ProfileSetupPage from './pages/ProfileSetupPage';
-import LandingPage from './pages/LandingPage';
+import PWAManager from './components/PWAManager';
+import CallManager from './contexts/CallManager';
+import BottomNav from './components/BottomNav';
+import { useLocation } from 'react-router';
+
+// Static imports for all pages
 import HomePage from './pages/HomePage';
 import MessagesPage from './pages/MessagesPage';
 import ChatPage from './pages/ChatPage';
@@ -20,17 +26,13 @@ import CallHistoryPage from './pages/CallHistoryPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
 import StitchDemoPage from './pages/StitchDemoPage';
-import PWAManager from './components/PWAManager';
-import CallManager from './contexts/CallManager';
-import BottomNav from './components/BottomNav';
-import { useLocation } from 'react-router';
 
 const NavigationHandler = () => {
   const location = useLocation();
-  const hideNavPaths = ['/dashboard', '/home', '/messages', '/contacts', '/chat', '/groups/', '/call', '/group-call', '/', '/login', '/register', '/onboarding', '/profile-setup'];
-  const shouldHide = hideNavPaths.some(path => location.pathname.startsWith(path)) || location.pathname === '/';
+  const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call');
+  const isAuth = ['/', '/login', '/register', '/onboarding', '/profile-setup', '/stitch-demo'].includes(location.pathname);
 
-  if (shouldHide) return null;
+  if (isChat || isAuth) return null;
   return <BottomNav />;
 };
 
@@ -97,109 +99,32 @@ const App = () => {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<SignUpPage />} />
               <Route path="/signup" element={<Navigate to="/register" replace />} />
-
-              {/* Stitch Design Demo Route - Public for testing */}
               <Route path="/stitch-demo" element={<StitchDemoPage />} />
 
-              {/* Rotas protegidas */}
-              <Route path="/onboarding" element={
-                <ProtectedRoute>
-                  <OnboardingPage />
-                </ProtectedRoute>
-              } />
+              {/* Fluxo de integração/setup */}
+              <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+              <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetupPage /></ProtectedRoute>} />
 
-              <Route path="/profile-setup" element={
-                <ProtectedRoute>
-                  <ProfileSetupPage />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <StitchDemoPage />
-                </ProtectedRoute>
-              } />
-
-              {/* Mapear /home para /dashboard para compatibilidade */}
+              {/* Rotas principais protegidas */}
+              <Route path="/dashboard" element={<ProtectedRoute><StitchDemoPage /></ProtectedRoute>} />
               <Route path="/home" element={<Navigate to="/dashboard" replace />} />
 
-              <Route path="/messages" element={
-                <ProtectedRoute>
-                  <Navigate to="/dashboard" replace />
-                </ProtectedRoute>
-              } />
+              <Route path="/messages" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
+              <Route path="/chat/:channelId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+              <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
+              <Route path="/groups/:channelId" element={<ProtectedRoute><GroupChatPage /></ProtectedRoute>} />
 
-              <Route path="/chat/:id" element={
-                <ProtectedRoute>
-                  <ChatPage />
-                </ProtectedRoute>
-              } />
+              <Route path="/call/:callId?" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
+              <Route path="/call/video/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
+              <Route path="/call/voice/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
+              <Route path="/group-call/:groupId" element={<ProtectedRoute><GroupCallPage /></ProtectedRoute>} />
 
-              <Route path="/groups" element={
-                <ProtectedRoute>
-                  <GroupsPage />
-                </ProtectedRoute>
-              } />
+              <Route path="/contacts" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
+              <Route path="/history" element={<ProtectedRoute><CallHistoryPage /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
-              <Route path="/groups/:groupId" element={
-                <ProtectedRoute>
-                  <GroupChatPage />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/calls" element={
-                <ProtectedRoute>
-                  <ContactsPage />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/call/:callId?" element={
-                <ProtectedRoute>
-                  <CallPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/call/video/:callId" element={
-                <ProtectedRoute>
-                  <CallPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/call/voice/:callId" element={
-                <ProtectedRoute>
-                  <CallPage />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/group-call/:groupId" element={
-                <ProtectedRoute>
-                  <GroupCallPage />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/contacts" element={
-                <ProtectedRoute>
-                  <Navigate to="/dashboard" replace />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/history" element={
-                <ProtectedRoute>
-                  <CallHistoryPage />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/notifications" element={
-                <ProtectedRoute>
-                  <NotificationsPage />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/settings" element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              } />
-
-              {/* Rota padrão */}
+              {/* Fallback */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
 
@@ -210,7 +135,7 @@ const App = () => {
           </div>
         </CallManager>
       </AuthProvider>
-    </ErrorBoundary>
+    </ErrorBoundary >
   );
 };
 

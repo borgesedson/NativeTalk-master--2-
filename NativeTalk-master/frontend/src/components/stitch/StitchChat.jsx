@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router';
 import useAuthUser from '../../hooks/useAuthUser';
 import { getStreamToken, translateMessage, getAllUsers } from '../../lib/api';
 import DesktopChatLayout from '../layout/DesktopChatLayout';
+import MobileChatLayout from '../layout/MobileChatLayout';
+import useIsMobile from '../../hooks/useIsMobile';
 import { getAvatarUrl, getLanguageCode } from '../../lib/utils';
 import AudioRecorder from '../AudioRecorder';
 import CallingScreen from '../calls/CallingScreen';
@@ -29,6 +31,82 @@ const LANGUAGE_FLAGS = {
 };
 
 const getFlag = (langCode) => LANGUAGE_FLAGS[langCode] || '🌐';
+
+// --- Audio Preprocessing Helpers ---
+const audioBufferToWav = (buffer) => {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numChannels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = buffer.length * blockAlign;
+    const bufferArray = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(bufferArray);
+
+    const writeString = (offset, str) => {
+        for (let i = 0; i < str.length; i++) {
+            view.setUint8(offset + i, str.charCodeAt(i));
+        }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitDepth, true);
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    const channelData = buffer.getChannelData(0);
+    let offset = 44;
+    for (let i = 0; i < buffer.length; i++) {
+        const sample = Math.max(-1, Math.min(1, channelData[i]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        offset += 2;
+    }
+
+    return new Blob([bufferArray], { type: 'audio/wav' });
+};
+
+const preprocessAudio = async (blob) => {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    // Convert to mono (single channel — better for Whisper)
+    const offlineContext = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+        1, // mono
+        audioBuffer.duration * 16000,
+        16000 // 16kHz
+    );
+
+    const source = offlineContext.createBufferSource();
+    source.buffer = audioBuffer;
+
+    // Add noise reduction filter
+    const filter = offlineContext.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 100; // remove low frequency noise
+
+    source.connect(filter);
+    filter.connect(offlineContext.destination);
+    source.start();
+
+    const processedBuffer = await offlineContext.startRendering();
+
+    // Convert back to blob
+    const wavBlob = audioBufferToWav(processedBuffer);
+    console.log('[Audio] Preprocessed:', blob.size, '→', wavBlob.size, 'bytes');
+    return wavBlob;
+};
 
 // --- Subs ---
 
@@ -159,22 +237,31 @@ const CustomConversationRow = (props) => {
     // Typing indicator check
     const isOtherUserTyping = Object.values(channel.state.typing || {}).some(t => t.user?.id !== currentUser.id);
 
+    const isMobile = useIsMobile();
+    const navigate = useNavigate();
+
     return (
         <div
-            onClick={() => setActiveChannel(channel)}
-            className={`flex gap-3 cursor-pointer p-2.5 rounded-2xl transition-all duration-200 active:scale-[0.98] ${active ? 'bg-white/10 border border-white/5 shadow-lg' : 'hover:bg-white/5 border border-transparent'}`}
+            onClick={() => {
+                if (isMobile) {
+                    navigate(`/chat/${channel.id}`);
+                } else {
+                    setActiveChannel(channel);
+                }
+            }}
+            className={`flex gap-3 cursor-pointer p-3 md:p-2.5 rounded-2xl transition-all duration-200 active:scale-[0.98] ${active && !isMobile ? 'bg-white/10 border border-white/5 shadow-lg' : 'hover:bg-white/5 border border-transparent'}`}
         >
             <div className="relative shrink-0">
-                <div className="size-12 rounded-full bg-cover bg-center" style={{ backgroundImage: `url('${imgUrl}')` }}></div>
+                <div className="size-12 rounded-full bg-cover bg-center shrink-0" style={{ backgroundImage: `url('${imgUrl}')` }}></div>
                 {isOnline && <div className="absolute bottom-0 right-0 size-3 border-2 border-[#0D2137] rounded-full bg-success"></div>}
             </div>
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                 <div className="flex justify-between items-center mb-0.5">
-                    <h3 className="font-bold text-[14px] truncate text-white">{name} <span className="text-[12px]">{langCode}</span></h3>
-                    <span className="text-[11px] font-medium text-slate-500">{time}</span>
+                    <h3 className={`font-bold ${isMobile ? 'text-[16px]' : 'text-[14px]'} truncate text-white`}>{name} <span className="text-[12px]">{langCode}</span></h3>
+                    <span className="text-[12px] font-medium text-slate-500">{time}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                    <p className="text-[13px] text-slate-400 truncate italic">
+                <div className="flex justify-between items-center gap-2">
+                    <p className={`${isMobile ? 'text-[14px]' : 'text-[13px]'} text-slate-400 truncate italic`}>
                         {isOtherUserTyping ? "Digitando..." : `"${lastMsgText}"`}
                     </p>
                     {unseenCount > 0 && <span className="size-5 rounded-full bg-accent text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-md">{unseenCount}</span>}
@@ -294,7 +381,20 @@ const ContactsSidebarContent = () => {
     const [isNewChatOpen, setIsNewChatOpen] = useState(false);
     const [channelSearch, setChannelSearch] = useState("");
 
-    if (!currentUser?.id) return null;
+    if (!currentUser?.id) {
+        console.log('[Mobile] currentUser not ready yet, waiting...');
+        return <div className="p-4 space-y-4">
+            {[1, 2, 3].map(i => (
+                <div key={i} className="flex gap-3 animate-pulse">
+                    <div className="size-12 rounded-full bg-white/5 shrink-0"></div>
+                    <div className="flex-1 py-1 space-y-2">
+                        <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                        <div className="h-3 bg-white/5 rounded w-3/4"></div>
+                    </div>
+                </div>
+            ))}
+        </div>;
+    }
 
     const filters = useMemo(() => ({
         type: 'messaging',
@@ -302,6 +402,14 @@ const ContactsSidebarContent = () => {
     }), [currentUser.id]);
 
     const sort = useMemo(() => ({ last_message_at: -1 }), []);
+    const options = useMemo(() => ({ limit: 20 }), []);
+
+    // Add Debug Logs
+    useEffect(() => {
+        console.log('[Mobile] currentUser:', currentUser?.id);
+        console.log('[Mobile] Stream client connected:', client?.userID);
+        console.log('[Mobile] ChannelList filters:', filters);
+    }, [currentUser?.id, client?.userID, filters]);
 
     useEffect(() => {
         const handleOpen = () => setIsNewChatOpen(true);
@@ -321,64 +429,81 @@ const ContactsSidebarContent = () => {
         });
     };
 
+    const isMobile = useIsMobile();
+
     return (
         <div className="h-full bg-transparent flex flex-col w-full text-white relative">
             <NewChatModal isOpen={isNewChatOpen} onClose={() => setIsNewChatOpen(false)} />
 
-            <div className="px-6 pt-6 pb-2 flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight text-white">Mensagens</h2>
-                <button onClick={() => setIsNewChatOpen(true)} className="size-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-300 transition-colors">
-                    <span className="material-symbols-outlined text-[20px]">edit_square</span>
-                </button>
+            <div className="px-5 md:px-6 pt-5 md:pt-6 pb-2 flex items-center justify-between">
+                <h2 className="text-2xl md:text-2xl font-bold tracking-tight text-white mb-1">{isMobile ? "NativeTalk 🌐" : "Mensagens"}</h2>
+                <div className="flex items-center gap-2">
+                    {isMobile && (
+                        <button onClick={() => window.dispatchEvent(new CustomEvent('open-new-chat'))} className="size-10 rounded-full hover:bg-white/10 flex items-center justify-center text-slate-300 transition-colors">
+                            <span className="material-symbols-outlined text-[24px]">search</span>
+                        </button>
+                    )}
+                    <button onClick={() => setIsNewChatOpen(true)} className={`${isMobile ? 'size-10 bg-transparent' : 'size-10 bg-white/5'} rounded-full hover:bg-white/10 flex items-center justify-center text-slate-300 transition-colors`}>
+                        <span className="material-symbols-outlined text-[24px]">edit_square</span>
+                    </button>
+                </div>
             </div>
 
             <OnlineUsersRow />
 
-            <div className="px-6 mb-4 mt-2 relative">
-                <input
-                    type="text"
-                    placeholder="Search..."
-                    value={channelSearch}
-                    onChange={(e) => setChannelSearch(e.target.value)}
-                    className="w-full bg-black/20 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-[13px] text-white placeholder:text-slate-500 focus:outline-none focus:border-primary/50 transition-colors"
-                />
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-500 text-[18px]">search</span>
-            </div>
+            {!isMobile && (
+                <div className="px-6 mb-4 mt-2 relative">
+                    <input
+                        type="text"
+                        placeholder="Pesquisar..."
+                        value={channelSearch}
+                        onChange={(e) => setChannelSearch(e.target.value)}
+                        className="w-full bg-black/20 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-[13px] text-white placeholder:text-slate-500 focus:outline-none focus:border-primary/50 transition-colors"
+                    />
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-500 text-[18px]">search</span>
+                </div>
+            )}
 
-            <div className="flex-1 overflow-y-auto hide-scrollbar px-4 pb-6">
-                <div className="flex items-center gap-2 mb-3 px-2 text-slate-400 opacity-80 pt-2">
+            <div
+                className="flex-1 overflow-y-auto hide-scrollbar px-2 md:px-4 pb-6 min-h-[300px]"
+                style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto' }}
+            >
+                <div className="flex items-center gap-2 mb-3 px-2 text-slate-400 opacity-80 pt-2 shrink-0">
                     <span className="material-symbols-outlined text-[16px]">forum</span>
                     <span className="text-xs font-bold uppercase tracking-wider">Todas as Conversas</span>
                 </div>
 
-                <ChannelList
-                    filters={filters}
-                    sort={sort}
-                    Preview={CustomConversationRow}
-                    customChannelFilterFn={channelFilterFn}
-                    EmptyStateIndicator={() => (
-                        <div className="text-center text-slate-400 mt-10 p-6 bg-white/5 rounded-xl border border-dashed border-white/10">
-                            <p className="mb-4 text-[13px] font-medium">Nenhuma conversa ainda</p>
-                            <button onClick={() => setIsNewChatOpen(true)} className="text-primary hover:text-white transition-colors text-[13px] font-bold flex items-center justify-center gap-1 mx-auto bg-white/5 px-4 py-2 rounded-full">
-                                Encontre alguém para conversar <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                            </button>
-                        </div>
-                    )}
-                    LoadingErrorIndicator={() => <div className="p-4 text-red-400 text-sm">Problemas de conexão. Tente novamente...</div>}
-                    LoadingIndicator={() => (
-                        <div className="p-4 space-y-4">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="flex gap-3 animate-pulse">
-                                    <div className="size-12 rounded-full bg-white/5 shrink-0"></div>
-                                    <div className="flex-1 py-1 space-y-2">
-                                        <div className="h-3 bg-white/5 rounded w-1/2"></div>
-                                        <div className="h-3 bg-white/5 rounded w-3/4"></div>
+                <div className="relative w-full" style={{ flex: '1 1 auto', minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
+                    <ChannelList
+                        filters={filters}
+                        sort={sort}
+                        options={options}
+                        Preview={CustomConversationRow}
+                        customChannelFilterFn={channelFilterFn}
+                        EmptyStateIndicator={() => (
+                            <div className="text-center text-slate-400 mt-10 p-6 bg-white/5 rounded-xl border border-dashed border-white/10">
+                                <p className="mb-4 text-[13px] font-medium">Nenhuma conversa ainda</p>
+                                <button onClick={() => window.dispatchEvent(new CustomEvent('open-new-chat'))} className="text-primary hover:text-white transition-colors text-[13px] font-bold flex items-center justify-center gap-1 mx-auto bg-white/5 px-4 py-2 rounded-full">
+                                    Encontre alguém para conversar <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                                </button>
+                            </div>
+                        )}
+                        LoadingErrorIndicator={() => <div className="p-4 text-red-500 font-bold bg-red-500/10 rounded-lg border border-red-500/20 text-center m-4">Sem conexão com o chat! Verifique sua rede.</div>}
+                        LoadingIndicator={() => (
+                            <div className="p-4 space-y-4">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="flex gap-3 animate-pulse">
+                                        <div className="size-12 rounded-full bg-white/5 shrink-0"></div>
+                                        <div className="flex-1 py-1 space-y-2">
+                                            <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                                            <div className="h-3 bg-white/5 rounded w-3/4"></div>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                />
+                                ))}
+                            </div>
+                        )}
+                    />
+                </div>
             </div>
         </div>
     );
@@ -412,6 +537,7 @@ const CustomMessageBubble = (props) => {
     const isOwnMessage = message?.user?.id === authUser?.id || message?.user?.id === message?._client?.userID;
     const translationData = translations ? translations[cacheKey] : null;
     const translation = translationData?.translatedText || translationData?.translation?.text;
+    const confidence = translationData?.confidence;
 
     const timeString = formatMessageTime(message.created_at);
 
@@ -437,7 +563,7 @@ const CustomMessageBubble = (props) => {
 
     if (isOwnMessage) {
         return (
-            <div className="flex flex-col items-end gap-1 ml-auto max-w-[75%] mb-4">
+            <div className="flex flex-col items-end gap-1 ml-auto max-w-[80%] md:max-w-[70%] mb-4">
                 <div className="bg-gradient-to-br from-[#0D7377] to-[#0a5a5e] text-white rounded-[18px] rounded-tr-[4px] p-4 shadow-lg border border-white/10">
                     <p className="text-[15px] leading-relaxed font-bold">{message.text}</p>
                 </div>
@@ -450,7 +576,7 @@ const CustomMessageBubble = (props) => {
     }
 
     return (
-        <div className="flex gap-3 max-w-[75%] mb-4 group">
+        <div className="flex gap-3 max-w-[80%] md:max-w-[70%] mb-4 group">
             <div className="size-10 shrink-0 rounded-full bg-cover bg-center mt-1 shadow-md" style={{ backgroundImage: `url('${message.user?.image || "https://ui-avatars.com/api/?name=" + (message.user?.name || 'U')}')` }}></div>
             <div className="flex flex-col gap-1 items-start">
                 <span className="text-[13px] font-bold text-[#0D7377] ml-1">{message.user?.name || 'Guest'}</span>
@@ -461,16 +587,29 @@ const CustomMessageBubble = (props) => {
                             <p className="text-[12px] text-white/50 italic mb-1.5 leading-relaxed">
                                 {message.text}
                             </p>
-                            <div className="pt-1.5 border-t border-white/10 flex items-start gap-2">
-                                <p className="text-[15px] font-semibold text-white leading-relaxed flex-1">
-                                    {translation}
-                                </p>
-                                <button
-                                    onClick={() => handlePlayback(translation)}
-                                    className="text-slate-400 hover:text-white transition-colors shrink-0 active:scale-95"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">volume_up</span>
-                                </button>
+                            <div className="pt-1.5 border-t border-white/10 flex flex-col items-start gap-1">
+                                <div className="flex items-start gap-2 w-full">
+                                    <p className="text-[15px] font-semibold text-white leading-relaxed flex-1">
+                                        {translation}
+                                    </p>
+                                    <button
+                                        onClick={() => handlePlayback(translation)}
+                                        className="text-slate-400 hover:text-white transition-colors shrink-0 active:scale-95"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">volume_up</span>
+                                    </button>
+                                </div>
+                                {confidence !== undefined && (
+                                    <span style={{
+                                        fontSize: '11px',
+                                        color: confidence > 70 ? '#2ECC71' :
+                                            confidence > 40 ? '#F4D03F' : '#E74C3C'
+                                    }}>
+                                        {confidence > 70 ? '✓ Tradução precisa' :
+                                            confidence > 40 ? '~ Tradução aproximada' :
+                                                '⚠ Baixa confiança'}
+                                    </span>
+                                )}
                             </div>
                         </>
                     ) : (
@@ -641,15 +780,20 @@ const CustomMessageInputUI = () => {
         if (!channel) return;
         const toastId = toast.loading('🔄 Transcrevendo...', { id: 'audio-flow' });
         try {
+            // 0. Preprocess audio for whisper (convert to 16kHz mono + apply highpass noise reduction)
+            toast.loading('🔊 Processando áudio...', { id: toastId });
+            const processedBlob = await preprocessAudio(audioBlob);
+
             // 1. Converter para base64 como solicitado
             const base64 = await new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result.split(',')[1]);
-                reader.readAsDataURL(audioBlob);
+                reader.readAsDataURL(processedBlob);
             });
 
             // 2. Upload para Storage (URL pública)
-            const uploadResult = await uploadAudio(audioBlob);
+            toast.loading('☁️ Enviando áudio...', { id: toastId });
+            const uploadResult = await uploadAudio(processedBlob, 'audio/wav');
             const audioUrl = uploadResult?.url || uploadResult;
             if (!audioUrl) throw new Error("Erro ao fazer upload do áudio");
 
@@ -920,6 +1064,12 @@ const StitchChat = () => {
     const [loading, setLoading] = useState(true);
     const [translations, setTranslations] = useState({});
     const translatingRef = useRef(new Set());
+    const isMobile = useIsMobile();
+
+    const clientRef = useRef(null);
+    if (!clientRef.current) {
+        clientRef.current = StreamChat.getInstance(STREAM_API_KEY);
+    }
 
     // Stream Video Call States
     const [callScreen, setCallScreen] = useState(null); // 'incoming', 'calling', 'voice', 'video'
@@ -980,31 +1130,29 @@ const StitchChat = () => {
         staleTime: 20 * 60 * 1000,
     });
 
+    const tokenString = tokenData?.token;
+    const userId = user?.id;
+    const userLang = user?.native_language || user?.nativeLanguage;
+
     useEffect(() => {
-        if (!tokenData?.token || !user) return;
-        const client = StreamChat.getInstance(STREAM_API_KEY);
+        if (!tokenString || !userId) return;
+        const client = clientRef.current;
         let cleanup = false;
 
         const initChat = async () => {
             try {
-                const langCode = getLanguageCode(user.native_language);
-                console.log(`[Stream] Connecting user ${user.id} with nativeLanguage: ${langCode}`);
+                const langCode = getLanguageCode(userLang);
+                console.log(`[Stream] Connecting user ${userId} with nativeLanguage: ${langCode}`);
                 await client.connectUser(
                     {
-                        id: user.id,
+                        id: userId,
                         name: user.name,
                         image: getAvatarUrl(user.avatar_url, user.name),
                         native_language: langCode,
                         nativeLanguage: langCode
                     },
-                    tokenData.token
+                    tokenString
                 );
-
-                // Force-sync language to Stream Chat profile (fixes users who connected before the fix)
-                await client.partialUpdateUser({
-                    id: user.id,
-                    set: { nativeLanguage: langCode, native_language: langCode }
-                });
 
                 // Add message listener for translations
                 client.on('message.new', async (event) => {
@@ -1014,8 +1162,8 @@ const StitchChat = () => {
                 // Init Stream Video
                 const vClient = new StreamVideoClient({
                     apiKey: STREAM_API_KEY,
-                    user: { id: user.id, name: user.name, image: getAvatarUrl(user.avatar_url, user.name) },
-                    token: tokenData.token
+                    user: { id: userId, name: user.name, image: getAvatarUrl(user.url, user.name) },
+                    token: tokenString
                 });
 
                 if (!cleanup) {
@@ -1025,31 +1173,43 @@ const StitchChat = () => {
                 }
             } catch (err) {
                 console.error("Connect error", err);
-                setLoading(false);
+                if (!cleanup) setLoading(false);
             }
         };
 
-        if (!chatClient) {
+        if (!chatClient || !client.user) {
             initChat();
         }
 
         return () => {
             cleanup = true;
-            client.disconnectUser();
+            // Only disconnect if we are actually unmounting or identity changes
+            if (client) client.disconnectUser();
             if (chatClient && chatClient !== client) chatClient.disconnectUser();
             if (videoClient) videoClient.disconnectUser();
         };
-    }, [tokenData, user]);
+    }, [tokenString, userId, userLang]);
 
     // Listen for incoming video calls
     useEffect(() => {
         if (!videoClient) return;
         const unsubscribe = videoClient.on('call.ring', async (event) => {
             try {
-                const call = videoClient.call(event.call.type, event.call.id);
-                await call.get();
-                setIncomingCall(call);
-                setCaller(call.state.createdBy?.custom || call.state.createdBy);
+                const incomingCall = videoClient.call(event.call.type, event.call.id);
+                await incomingCall.get(); // fetch full call data first
+
+                // Wait for state to be populated
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Safe access with fallback
+                const createdBy = incomingCall.state?.createdBy ||
+                    event.call?.created_by ||
+                    { id: 'unknown', name: 'Alguém', image: null };
+
+                console.log('[Call] Incoming from:', createdBy);
+
+                setIncomingCall(incomingCall);
+                setCaller(createdBy.custom || createdBy);
                 setCallScreen('incoming');
             } catch (e) {
                 console.error("Incoming ring error:", e);
@@ -1127,15 +1287,23 @@ const StitchChat = () => {
         <StreamVideo client={videoClient}>
             <Chat client={chatClient} theme="str-chat__theme-dark">
                 {/* 1. Overlays para as telas de chamadas */}
-                {callScreen === 'incoming' && incomingCall && (
+                {callScreen === 'incoming' && incomingCall && caller && (
                     <IncomingCallScreen
                         call={incomingCall}
                         caller={caller}
                         onAccept={async () => {
-                            await incomingCall.join();
-                            setActiveCall(incomingCall);
-                            // Identificar se é vídeo (default) ou voz (audio_room)
-                            setCallScreen(incomingCall.type === 'audio_room' ? 'voice' : 'video');
+                            try {
+                                if (!incomingCall) return;
+                                await incomingCall.accept();
+                                await incomingCall.join();
+                                setActiveCall(incomingCall);
+                                // Identificar se é vídeo (default) ou voz (audio_room)
+                                setCallScreen(incomingCall.type === 'audio_room' ? 'voice' : 'video');
+                            } catch (err) {
+                                console.error('[Call] Accept error:', err);
+                                setCallScreen(null);
+                                setIncomingCall(null);
+                            }
                         }}
                         onReject={async () => {
                             await incomingCall.leave();
@@ -1181,22 +1349,28 @@ const StitchChat = () => {
                     />
                 )}
 
-                <DesktopChatLayout
-                    navigationSidebar={<NavigationSidebar />}
-                    contactsSidebar={<ContactsSidebarContent />}
-                    mainChatArea={
-                        <Channel>
-                            <Window>
-                                <MainChatAreaContent
-                                    translations={translations}
-                                    onTranslate={handleTranslate}
-                                    onStartVoiceCall={startVoiceCall}
-                                    onStartVideoCall={startVideoCall}
-                                />
-                            </Window>
-                        </Channel>
-                    }
-                />
+                {isMobile ? (
+                    <MobileChatLayout
+                        contactsSidebar={<ContactsSidebarContent />}
+                    />
+                ) : (
+                    <DesktopChatLayout
+                        navigationSidebar={<NavigationSidebar />}
+                        contactsSidebar={<ContactsSidebarContent />}
+                        mainChatArea={
+                            <Channel>
+                                <Window>
+                                    <MainChatAreaContent
+                                        translations={translations}
+                                        onTranslate={handleTranslate}
+                                        onStartVoiceCall={startVoiceCall}
+                                        onStartVideoCall={startVideoCall}
+                                    />
+                                </Window>
+                            </Channel>
+                        }
+                    />
+                )}
             </Chat>
         </StreamVideo>
     );

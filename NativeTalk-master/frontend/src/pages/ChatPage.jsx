@@ -8,14 +8,12 @@ import { storage } from "../lib/insforge";
 import {
   Channel,
   Chat,
-  MessageInput,
   MessageList,
   Thread,
   Window,
+  useChatContext
 } from "stream-chat-react";
 import { StreamChat } from "stream-chat";
-import { Phone, Video, MoreVertical, Search, ArrowLeft } from "lucide-react";
-
 import ChatLoader from "../components/ChatLoader";
 import CustomMessage from "../components/CustomMessage";
 import CustomChannelHeader from "../components/CustomChannelHeader";
@@ -38,6 +36,14 @@ const ChatPage = () => {
   const translatingRef = useRef(new Set());
   const initRef = useRef(false);
 
+  // Global translation cache
+  const translationCache = useRef({});
+
+  const clientRef = useRef(null);
+  if (!clientRef.current) {
+    clientRef.current = StreamChat.getInstance(STREAM_API_KEY);
+  }
+
   const buildMsgKey = (m) => m?.id || `${m?.created_at}-${m?.user?.id}`;
   const { authUser } = useAuthUser();
 
@@ -55,7 +61,7 @@ const ChatPage = () => {
 
     async function initChat() {
       try {
-        const client = StreamChat.getInstance(STREAM_API_KEY);
+        const client = clientRef.current;
         await client.connectUser(
           { id: authUser.id, name: authUser.name, image: getAvatarUrl(authUser.avatar_url, authUser.name) },
           tokenData.token
@@ -65,7 +71,9 @@ const ChatPage = () => {
         const currChannel = client.channel("messaging", channelId, {
           members: [authUser.id, targetUserId],
         });
-        await currChannel.watch();
+
+        // 1. Limit initial messages load to 20
+        await currChannel.watch({ limit: 20 });
 
         setChatClient(client);
         setChannel(currChannel);
@@ -97,6 +105,14 @@ const ChatPage = () => {
           }
 
           const msgKey = buildMsgKey(message);
+
+          // 3. Cache translations - Never translate the same message twice
+          const cacheKey = `${msgKey}-${currentUserLang}`;
+          if (translationCache.current[cacheKey]) {
+            setTranslations((prev) => ({ ...prev, [msgKey]: translationCache.current[cacheKey] }));
+            return;
+          }
+
           if (translatingRef.current.has(msgKey)) return;
           if (translations[msgKey]) return; // Já traduzido
 
@@ -104,6 +120,7 @@ const ChatPage = () => {
           try {
             const result = await translateMessage(message.text, message.user.id, currentUserLang, msgLang);
             if (result && result.translatedText) {
+              translationCache.current[cacheKey] = result;
               setTranslations((prev) => ({ ...prev, [msgKey]: result }));
             }
           } catch (e) {
@@ -130,14 +147,54 @@ const ChatPage = () => {
 
         currChannel.on("message.new", handleNewMessage);
 
-        // Traduzir mensagens existentes se necessário
+        // 2 & 5. Throttle and Batch Translations
         const existingMessages = currChannel.state.messages || [];
-        existingMessages.forEach(m => {
-          if (m.user?.id !== authUser.id) translateIncoming(m);
+
+        // Only translate last 10 messages initially to save API calls
+        const messagesToTranslate = existingMessages.slice(-10);
+
+        // batchTranslate added previously
+        const batchTranslateObj = {
+          run: async (messages) => {
+            const promises = messages
+              .filter(m => m.user?.id !== authUser.id)
+              .map(m => translateIncoming(m));
+            await Promise.allSettled(promises);
+          }
+        };
+
+        batchTranslateObj.run(messagesToTranslate);
+
+        // Optional scroll event handler could go here, but Stream's MessageList
+        // handles infinite scroll. We can hook into the channel's query event
+        // to translate older messages when they are loaded via on-scroll
+        client.on('message.read', (e) => {
+          // We'll use a local state or ref to trigger translations if needed,
+          // but Stream's message.new handles live messages.
+        });
+
+        // Listen to when channel state updates (e.g. after paginating/fetching older messages)
+        // This line is redundant as message.new is already handled above.
+        // currChannel.on('message.new', handleNewMessage);
+
+        // To handle pagination translation:
+        currChannel.on('message.read', () => {
+          const allMsgs = currChannel.state.messages || [];
+          const readerLang = getLanguageCode(authUser.native_language || 'pt');
+          const untranslated = allMsgs.filter(m => {
+            const msgKey = buildMsgKey(m);
+            const cacheKey = `${msgKey}-${readerLang}`;
+            return m.user?.id !== authUser.id && !translationCache.current[cacheKey];
+          });
+          // Translate next batch of 10 if there are untranslated ones
+          if (untranslated.length > 0) {
+            batchTranslateObj.run(untranslated.slice(-10));
+          }
         });
 
         cleanupFn = () => {
           currChannel.off("message.new", handleNewMessage);
+          currChannel.off("message.read");
           try { client.disconnectUser(); } catch { }
           initRef.current = false;
         };
@@ -207,7 +264,21 @@ const ChatPage = () => {
     }
   };
 
-  if (loading || !chatClient || !channel) return <ChatLoader />;
+  // 4. Show skeleton while loading
+  if (loading || !chatClient || !channel) return (
+    <div className="flex flex-col h-[100dvh] w-full bg-[#0D2137]">
+      <div className="h-[60px] md:h-[88px] shrink-0 border-b border-white/5 bg-transparent pt-[env(safe-area-inset-top)]"></div>
+      <div className="p-4 flex flex-col gap-3 flex-1 overflow-hidden opacity-50">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className={`flex gap-3 animate-pulse ${i % 2 === 0 ? 'flex-row-reverse' : ''}`}>
+            <div className="size-10 rounded-full bg-white/5 shrink-0"></div>
+            <div className={`h-16 bg-white/5 rounded-2xl w-[60%] ${i % 2 === 0 ? 'rounded-tr-sm' : 'rounded-tl-sm'}`}></div>
+          </div>
+        ))}
+      </div>
+      <div className="h-[80px] shrink-0 border-t border-white/5 bg-transparent pb-[env(safe-area-inset-bottom)]"></div>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-[#0D2137]">
@@ -313,6 +384,7 @@ const ChatPage = () => {
           align-items: center;
           gap: 12px;
           padding: 16px;
+          padding-bottom: calc(16px + env(safe-area-inset-bottom));
           background-color: #112021;
           border-top: 1px solid rgba(12, 115, 121, 0.2);
         }
@@ -350,7 +422,7 @@ const ChatPage = () => {
 
         /* Send button */
         .wa-input-wrapper .str-chat__send-button {
-          background: #0c7379 !important;
+          background: #0D7377 !important;
           border-radius: 50% !important;
           width: 36px !important;
           height: 36px !important;
@@ -428,6 +500,13 @@ const ChatPage = () => {
           padding: 4px 16px !important;
           font-size: 12px !important;
           font-style: italic !important;
+        }
+
+        /* ===== MOBILE ONLY: HIDE SIDEBAR ===== */
+        @media (max-width: 768px) {
+          .str-chat__channel-list {
+            display: none !important;
+          }
         }
       `}} />
     </div>
