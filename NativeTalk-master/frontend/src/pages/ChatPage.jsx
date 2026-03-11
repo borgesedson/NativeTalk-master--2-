@@ -4,6 +4,7 @@ import useAuthUser from "../hooks/useAuthUser";
 import { useQuery } from "@tanstack/react-query";
 import { getStreamToken, translateMessage, transcribeAudio } from "../lib/api";
 import { storage } from "../lib/insforge";
+import { useE2E } from "../hooks/useE2E";
 
 import {
   Channel,
@@ -11,7 +12,8 @@ import {
   MessageList,
   Thread,
   Window,
-  useChatContext
+  useChatContext,
+  MessageInput
 } from "stream-chat-react";
 import { StreamChat } from "stream-chat";
 import ChatLoader from "../components/ChatLoader";
@@ -38,6 +40,8 @@ const ChatPage = () => {
 
   // Global translation cache
   const translationCache = useRef({});
+
+  const { encryptMessageForUser } = useE2E();
 
   const clientRef = useRef(null);
   if (!clientRef.current) {
@@ -81,6 +85,8 @@ const ChatPage = () => {
 
         const translateIncoming = async (message) => {
           if (!message || !message.text) return;
+          if (message.isE2E) return; // Wait! E2E messages arrive encrypted, don't translate them naturally
+
           const isOwnMessage = message.user?.id === authUser.id;
           if (isOwnMessage) return;
 
@@ -88,25 +94,12 @@ const ChatPage = () => {
           const currentUserLang = getLanguageCode(authUser.native_language || 'pt');
           const msgLang = getLanguageCode(message.originalLanguage || 'en');
 
-          // DIAGNÓSTICO SOLICITADO PELO USUÁRIO
-          console.log('--- TRANSLATION DIAGNOSIS ---');
-          console.log('MSG ID:', message.id);
-          console.log('SENDER:', message.user.name);
-          console.log('FROM (raw):', message.originalLanguage);
-          console.log('FROM (iso):', msgLang);
-          console.log('TO (raw):', authUser.native_language);
-          console.log('TO (iso):', currentUserLang);
-          console.log('TEXT:', message.text.substring(0, 40));
-
           // Se o idioma for o mesmo (ex: ambos são 'en'), não traduz
-          if (msgLang === currentUserLang) {
-            console.log('SKIPPING: Languages are the same.');
-            return;
-          }
+          if (msgLang === currentUserLang) return;
 
           const msgKey = buildMsgKey(message);
 
-          // 3. Cache translations - Never translate the same message twice
+          // 3. Cache translations
           const cacheKey = `${msgKey}-${currentUserLang}`;
           if (translationCache.current[cacheKey]) {
             setTranslations((prev) => ({ ...prev, [msgKey]: translationCache.current[cacheKey] }));
@@ -136,7 +129,7 @@ const ChatPage = () => {
 
           if (event.type === "message.new" && message.user?.id !== authUser.id && !document.hasFocus()) {
             sendNotification(message.user.name || 'Nova Mensagem', {
-              body: message.text?.substring(0, 100) || 'Arquivo recebido',
+              body: message.isE2E ? 'Mensagem criptografada' : (message.text?.substring(0, 100) || 'Arquivo recebido'),
               icon: message.user.image || '/avatar.png',
               tag: `message-${message.id}`,
             });
@@ -300,12 +293,42 @@ const ChatPage = () => {
               <div className="wa-input-container">
                 <MessageInput
                   focus
-                  overrideSubmitHandler={(message) => {
-                    const msgData = {
-                      ...message,
-                      originalLanguage: authUser?.native_language || 'pt'
-                    };
-                    channel.sendMessage(msgData);
+                  overrideSubmitHandler={async (message) => {
+                    const originalText = message?.text?.trim() || '';
+                    if (!originalText && !message.attachments?.length) return;
+
+                    const originalLanguage = authUser?.native_language || 'pt';
+
+                    // Prepare metadata
+                    let translationsMeta = null;
+
+                    // 1. Send text to VPS for translation (Sender side)
+                    if (originalText) {
+                      toast.loading('Criptografando...', { id: 'e2e-toast' });
+                      try {
+                        const trLayer = await translateMessage(originalText, targetUserId);
+                        const payloadToEncrypt = JSON.stringify({
+                          original: originalText,
+                          translated: trLayer.translatedText,
+                          targetLanguage: trLayer.targetLanguage,
+                          sourceLanguage: trLayer.sourceLanguage
+                        });
+
+                        // 2. Encrypt using Recipient's public key
+                        const cipherStr = await encryptMessageForUser(targetUserId, payloadToEncrypt);
+
+                        // 3. Send via Stream as ciphertext
+                        await channel.sendMessage({
+                          text: cipherStr,
+                          isE2E: true,
+                          originalLanguage
+                        });
+                        toast.success('Mensagem Segura', { id: 'e2e-toast', duration: 1500 });
+                      } catch (err) {
+                        toast.error(err.message || 'Erro E2E', { id: 'e2e-toast' });
+                        // fallback non e2e if keys not initialized? No, better strict.
+                      }
+                    }
                   }}
                 />
               </div>

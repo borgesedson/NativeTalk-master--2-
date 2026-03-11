@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { register, verifyOTP } from "../lib/api";
+import { register, verifyOTP, saveE2EKeys } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
+import { useE2E } from "../hooks/useE2E";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
+  const { initializeE2EFromSignup } = useE2E();
 
   const [signupData, setSignupData] = useState({
     fullName: "",
@@ -29,6 +31,14 @@ const SignUpPage = () => {
         signupData.password,
         'pt' // Default native language
       );
+
+      // Initialize E2E Keys
+      try {
+        const { publicKey, encryptedPrivateKey } = await initializeE2EFromSignup(response.user.id, signupData.password);
+        await saveE2EKeys(publicKey, encryptedPrivateKey);
+      } catch (e2eError) {
+        console.error("Failed to generate E2E keys during signup", e2eError);
+      }
 
       if (!response.token) {
         setIsOtpSent(true);

@@ -26,10 +26,11 @@ import CallHistoryPage from './pages/CallHistoryPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
 import StitchDemoPage from './pages/StitchDemoPage';
+import InterpreterPage from './pages/InterpreterPage';
 
 const NavigationHandler = () => {
   const location = useLocation();
-  const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call');
+  const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call') || location.pathname.includes('/interpreter');
   const isAuth = ['/', '/login', '/register', '/onboarding', '/profile-setup', '/stitch-demo'].includes(location.pathname);
 
   if (isChat || isAuth) return null;
@@ -113,6 +114,8 @@ const App = () => {
               <Route path="/chat/:channelId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
               <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
               <Route path="/groups/:channelId" element={<ProtectedRoute><GroupChatPage /></ProtectedRoute>} />
+
+              <Route path="/interpreter" element={<ProtectedRoute><InterpreterPage /></ProtectedRoute>} />
 
               <Route path="/call/:callId?" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
               <Route path="/call/video/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />

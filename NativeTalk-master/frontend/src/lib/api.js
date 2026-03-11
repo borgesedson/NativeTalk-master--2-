@@ -257,6 +257,32 @@ export const completeOnboarding = async (onboardingData) => {
   });
 };
 
+export const saveE2EKeys = async (publicKey, encryptedPrivateKey) => {
+  const { data: { user } } = await auth.getCurrentUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
+  const { error } = await db
+    .from('profiles')
+    .update({
+      public_key: publicKey,
+      encrypted_private_key: encryptedPrivateKey
+    })
+    .eq('id', user.id);
+
+  if (error) throw error;
+};
+
+export const getPublicKey = async (userId) => {
+  const { data, error } = await db
+    .from('profiles')
+    .select('public_key')
+    .eq('id', userId)
+    .single();
+
+  if (error) throw error;
+  return data?.public_key;
+};
+
 // --- Users & Friends ---
 
 export const getAllUsers = async (filters = {}) => {
@@ -652,48 +678,79 @@ export const translateMessage = async (text, targetUserId, forcedTargetLang = nu
       return { translation: { text, language: targetLang }, translatedText: text, sourceLanguage: sourceLang, targetLanguage: targetLang };
     }
 
-    // 2. Usar Proxy do Backend (que encaminha para Argos VPS)
-    try {
-      console.log(`[API] Translation proxy call: ${sourceLang} -> ${targetLang}`);
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text,
-          from: sourceLang,
-          to: targetLang
-        })
-      });
+    // 2. Usar Proxy do Backend (que encaminha para Argos VPS) ou Fallback Offline
+    let translatorResult = null;
+    let usedFallback = false;
 
-      if (response.ok) {
-        const data = await response.json();
-        const translated = data.translated || data.translatedText || text;
-        return {
-          translation: { text: translated, language: targetLang },
-          sourceLanguage: sourceLang,
-          targetLanguage: targetLang,
-          translatedText: translated,
-          confidence: data.confidence
-        };
-      } else {
-        const errData = await response.json().catch(() => ({}));
-        console.error("[API] Proxy translation failed:", errData);
+    if (navigator.onLine) {
+      try {
+        console.log(`[API] Translation proxy call: ${sourceLang} -> ${targetLang}`);
+        const response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: text,
+            from: sourceLang,
+            to: targetLang
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          translatorResult = data.translated || data.translatedText || text;
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          console.error("[API] Proxy translation failed:", errData);
+        }
+      } catch (proxyErr) {
+        console.error("[API] Proxy translation error:", proxyErr);
       }
-    } catch (proxyErr) {
-      console.error("[API] Proxy translation error:", proxyErr);
+    }
+
+    // 3. Fallback Offline se a internet falhar ou a VPS cair
+    if (!translatorResult) {
+      console.log(`[API] VPS unavailable. Attempting offline fallback.`);
+      if ('translation' in window && window.translation.createTranslator) {
+        try {
+          // Normalize languages (navigator.translation prefers BCP-47 like "es", "en")
+          const canTranslate = await window.translation.canTranslate({
+            sourceLanguage: sourceLang,
+            targetLanguage: targetLang
+          });
+          if (canTranslate !== 'no') {
+            const translator = await window.translation.createTranslator({
+              sourceLanguage: sourceLang,
+              targetLanguage: targetLang
+            });
+            translatorResult = await translator.translate(text);
+            usedFallback = true;
+          }
+        } catch (e) {
+          console.warn("[API] Local translation API failed", e);
+        }
+      }
+
+      // Hard fallback
+      if (!translatorResult) {
+        translatorResult = `[Offline] ${text}`;
+        usedFallback = true;
+      }
     }
 
     return {
-      translation: { text: text, language: 'en' },
-      translatedText: text
+      translation: { text: translatorResult, language: targetLang },
+      sourceLanguage: sourceLang,
+      targetLanguage: targetLang,
+      translatedText: translatorResult,
+      confidence: usedFallback ? 0 : 0.99
     };
   } catch (error) {
     console.error("Erro na tradução:", error);
     return {
-      translation: { text: text, language: 'en' },
-      translatedText: text
+      translation: { text: `[Erro] ${text}`, language: 'en' },
+      translatedText: `[Erro] ${text}`
     };
   }
 };

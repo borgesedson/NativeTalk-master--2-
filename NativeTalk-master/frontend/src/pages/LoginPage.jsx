@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router';
 import { toast } from 'react-hot-toast';
 import { login as apiLogin } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useE2E } from '../hooks/useE2E';
 import { motion } from 'framer-motion';
+import { db } from '../lib/insforge';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +16,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
+  const { initializeE2EFromLogin } = useE2E();
 
   const handleChange = (e) => {
     setFormData({
@@ -32,6 +35,21 @@ const LoginPage = () => {
     try {
       setIsLoading(true);
       const response = await apiLogin(formData.email, formData.password);
+
+      // Fetch user profile to get encrypted private key
+      const { data: dbProfile } = await db
+        .from('profiles')
+        .select('encrypted_private_key')
+        .eq('id', response.user.id)
+        .single();
+
+      if (dbProfile?.encrypted_private_key) {
+        const success = await initializeE2EFromLogin(response.user.id, formData.password, dbProfile.encrypted_private_key);
+        if (!success) {
+          console.warn("Failed to decrypt E2E key on login");
+        }
+      }
+
       authLogin(response.user, response.token);
       toast.success(`Bem-vindo, ${response.user.name || 'Usuário'}!`);
       navigate('/dashboard');
