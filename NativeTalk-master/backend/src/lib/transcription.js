@@ -148,6 +148,16 @@ export const SPEECH_LANGUAGE_MAP = {
   'dutch': 'nl-NL',
   'polish': 'pl-PL',
   'turkish': 'tr-TR',
+  // Short codes
+  'en': 'en-US',
+  'pt': 'pt-BR',
+  'es': 'es-ES',
+  'fr': 'fr-FR',
+  'de': 'de-DE',
+  'it': 'it-IT',
+  'ja': 'ja-JP',
+  'zh': 'zh-CN',
+  'ko': 'ko-KR',
 };
 
 /**

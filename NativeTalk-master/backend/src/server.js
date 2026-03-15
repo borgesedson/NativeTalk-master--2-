@@ -162,6 +162,15 @@ app.use(express.urlencoded({
 }));
 app.use(cookieParser());
 
+// 📡 LOGGER GLOBAL (CAPTURA TUDO)
+app.use((req, res, next) => {
+  console.log(`📡 [${req.method}] ${req.url}`);
+  if (req.headers.authorization) {
+    console.log(`🔐 Auth: ${req.headers.authorization.substring(0, 20)}...`);
+  }
+  next();
+});
+
 // ✅ APLICAR RATE LIMITING ESPECÍFICO APENAS EM PRODUÇÃO E RELAXADO
 if (process.env.NODE_ENV === "production") {
   app.use("/api/auth", authLimiter);
@@ -312,6 +321,8 @@ app.post('/api/stt', async (req, res) => {
   }
 });
 
+// --- REPLACED WITH HIGHER LOGGER ---
+
 // ⚡ ROTAS DA API
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -320,23 +331,6 @@ app.use("/api/translation", translationRoutes);
 app.use("/api/transcription", transcriptionRoutes);
 app.use("/api/audio", audioRoutes);
 app.use("/api/groups", groupRoutes);
-
-// ⚡ FRONTEND SERVING (Support single link access)
-// ⚡ FRONTEND SERVING (Support single link access)
-// Point to frontend_new (.next/server/pages or similar? NextJS is different)
-// Usually NextJS static export goes to 'out', but if it's dynamic, we can't serve it easily with express.static unless exported.
-// For now, let's just Log requests to debug.
-
-app.use((req, res, next) => {
-  console.log(`📡 [${req.method}] ${req.url}`);
-  if (req.headers.authorization) {
-    console.log(`🔐 Auth Header present: ${req.headers.authorization.substring(0, 15)}...`);
-  } else {
-    console.log(`❌ No Auth Header`);
-  }
-  next();
-});
-
 const frontendPath = path.join(__dirname, "../../frontend_new/out"); // Assuming static export or similar
 
 if (fs.existsSync(frontendPath)) {

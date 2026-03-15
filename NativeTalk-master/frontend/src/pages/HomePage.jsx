@@ -58,14 +58,24 @@ const HomePage = () => {
       try {
         const streamClient = StreamChat.getInstance(STREAM_API_KEY);
 
-        await streamClient.connectUser(
-          {
-            id: authUser.id,
-            name: authUser.name,
-            image: authUser.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authUser.name),
-          },
-          tokenData.token
-        );
+        // Optimization: Check if already connected to the same user
+        if (streamClient.userID === authUser.id && streamClient.user) {
+          console.log('✅ Stream already connected to:', authUser.id);
+        } else {
+          // Disconnect if connected to someone else
+          if (streamClient.userID) {
+            await streamClient.disconnectUser();
+          }
+
+          await streamClient.connectUser(
+            {
+              id: authUser.id,
+              name: authUser.name,
+              image: authUser.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authUser.name),
+            },
+            tokenData.token
+          );
+        }
 
         if (!mounted) return;
         setClient(streamClient);
@@ -108,9 +118,7 @@ const HomePage = () => {
 
     return () => {
       mounted = false;
-      if (client) {
-        client.disconnectUser();
-      }
+      // We keep the connection alive for faster navigation
     };
   }, [tokenData, authUser]);
 

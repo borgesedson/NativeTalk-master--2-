@@ -82,7 +82,7 @@ export default function InterpreterPage() {
             const sourceLang = side === 'top' ? langTop : langBottom;
             const targetLang = side === 'top' ? langBottom : langTop;
 
-            const result = await transcribeAudio(url, sourceLang, targetLang);
+            const result = await transcribeAudio(url, null, null, null, sourceLang, targetLang);
 
             const transcript = result?.originalTranscription || '';
             const translatedText = result?.translatedTranscription || '';

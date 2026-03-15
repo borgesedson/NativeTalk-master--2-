@@ -54,25 +54,24 @@ const AudioRecorder = ({ onSendAudio, disabled }) => {
           channelCount: 1,
           sampleRate: 16000,
           echoCancellation: true,
-          noiseSuppression: true
+          noiseSuppression: true,
+          autoGainControl: true
         }
       });
 
-      // Try formats in order of compatibility
-      let mimeType = 'audio/ogg;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/ogg';
-      }
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/webm;codecs=opus';
-      }
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/webm';
-      }
+      // Force ogg/opus format — most compatible with ffmpeg
+      const mimeType = MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') 
+        ? 'audio/ogg;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/ogg')
+        ? 'audio/ogg'
+        : 'audio/webm;codecs=opus';
 
-      console.log('[Audio] Using format:', mimeType);
+      console.log('[Audio] Recording format:', mimeType);
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      const mediaRecorder = new MediaRecorder(stream, { 
+        mimeType,
+        audioBitsPerSecond: 128000
+      });
       mediaRecorderRef.current = mediaRecorder;
       const chunks = [];
 

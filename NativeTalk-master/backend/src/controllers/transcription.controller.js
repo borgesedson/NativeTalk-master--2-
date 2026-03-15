@@ -9,36 +9,23 @@ import { translateText, getLanguageCode } from "../lib/translation.js";
  */
 export async function transcribeAudioMessage(req, res) {
   try {
-    const { audioData, senderUserId, receiverUserId, transcription, testMode } = req.body;
+    const { audioData, senderUserId, receiverUserId, transcription, testMode, from, to } = req.body;
 
-    if (!senderUserId || !receiverUserId) {
-      return res.status(400).json({
-        message: "senderUserId and receiverUserId are required"
-      });
-    }
+    // Determine languages
+    let senderLangCode = from || 'en';
+    let receiverLangCode = to || 'en';
 
-    // Modo de teste: retorna transcrição simulada
-    if (testMode) {
-      console.log("🧪 MODO DE TESTE - Transcrição simulada");
-      return res.status(200).json({
-        originalTranscription: "Test transcription in original language",
-        translatedTranscription: "Transcrição de teste no idioma traduzido",
-        originalLanguage: "en",
-        targetLanguage: "pt",
-        testMode: true,
-      });
-    }
-
-    const senderLangCode = getLanguageCode('en');
-    const receiverLangCode = getLanguageCode('en');
+    // If languages aren't provided but IDs are, we'd ideally look them up in DB
+    // For now, if sender is 'me' or matches current user, we can assume something, 
+    // but better to just pass languages from frontend.
 
     console.log(`
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     🎤 TRADUÇÃO DE ÁUDIO:
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    🗣️  Quem fala: ${senderUserId}
-    👂 Quem ouve: ${receiverUserId}
-    📝 Transcrição: "${transcription || 'Não fornecida'}"
+    🗣️  Origem: ${senderLangCode} (User: ${senderUserId || 'N/A'})
+    👂 Destino: ${receiverLangCode} (User: ${receiverUserId || 'N/A'})
+    📝 Texto base: "${transcription || (audioData ? 'Áudio base64' : 'N/A')}"
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `);
 
@@ -48,58 +35,46 @@ export async function transcribeAudioMessage(req, res) {
     // Se não há transcrição do frontend, tentar transcrever via Azure Speech
     if (!transcription || transcription.startsWith('🎤')) {
       if (audioData && process.env.AZURE_SPEECH_KEY && process.env.AZURE_SPEECH_KEY !== 'SUA_CHAVE_1_AQUI') {
-        console.log('🎤 Sem transcrição do frontend. Tentando Azure Speech...');
+        console.log(`🎤 Sem transcrição. Tentando Azure Speech em ${senderLangCode}...`);
         try {
-          // Converter base64 para buffer
           const base64Data = audioData.includes(',') ? audioData.split(',')[1] : audioData;
           const audioBuffer = Buffer.from(base64Data, 'base64');
-          const speechLangCode = getSpeechLanguageCode('en');
-          console.log(`[DEBUG] speechLangCode usado no Azure:`, speechLangCode);
-          console.log(`🎤 Transcrevendo áudio ${audioBuffer.length} bytes em ${speechLangCode}...`);
+          const speechLangCode = getSpeechLanguageCode(senderLangCode);
           originalTranscription = await transcribeAudio(audioBuffer, speechLangCode);
-          console.log(`[DEBUG] Resultado da transcrição Azure:`, originalTranscription);
+          console.log(`✅ Azure Speech result: "${originalTranscription}"`);
         } catch (error) {
-          console.error('❌ Erro ao transcrever com Azure:', error.message);
-          console.warn('💡 Configure AZURE_SPEECH_KEY e AZURE_SPEECH_REGION para transcrição automática');
-          originalTranscription = '🎤 Mensagem de áudio';
+          console.error('❌ Erro Azure:', error.message);
+          originalTranscription = transcription || '🎤 Mensagem de áudio';
         }
+      } else if (audioData) {
+        // Se temos áudio mas não Azure, talvez devêssemos usar o Whisper VPS?
+        // O Whisper VPS está mapeado em server.js em /api/stt
+        console.warn('⚠️  Azure Speech não configurado. Use /api/stt para Whisper.');
+        originalTranscription = transcription || '🎤 Mensagem de áudio';
       } else {
-        if (!audioData) {
-          console.log('⚠️  Sem transcrição e sem áudio para transcrever');
-        } else {
-          console.log('⚠️  Azure Speech não configurado. Configure AZURE_SPEECH_KEY e AZURE_SPEECH_REGION');
-        }
-        originalTranscription = '🎤 Mensagem de áudio';
-      }
-
-      // Se ainda não tem transcrição válida, retornar sem tradução
-      if (originalTranscription.startsWith('🎤')) {
-        return res.status(200).json({
-          originalTranscription,
-          translatedTranscription: originalTranscription,
-          originalLanguage: senderLangCode,
-          targetLanguage: receiverLangCode,
-        });
+        originalTranscription = transcription || '🎤 Mensagem de áudio';
       }
     }
 
     // Traduzir para o idioma do RECEPTOR
     let translatedTranscription = originalTranscription;
 
-    if (senderLangCode !== receiverLangCode) {
-      translatedTranscription = await translateText(
-        originalTranscription,
-        senderLangCode,
-        receiverLangCode
-      );
-      console.log(`🌐 Traduzido para ${receiverLangCode}: "${translatedTranscription}"`);
-    } else {
-      console.log(`⚠️  Mesmo idioma, sem tradução necessária`);
+    if (senderLangCode !== receiverLangCode && !originalTranscription.startsWith('🎤')) {
+      try {
+        translatedTranscription = await translateText(
+          originalTranscription,
+          senderLangCode,
+          receiverLangCode
+        );
+        console.log(`🌐 Traduzido de ${senderLangCode} para ${receiverLangCode}: "${translatedTranscription}"`);
+      } catch (err) {
+        console.error('❌ Erro tradução:', err.message);
+      }
     }
 
     res.status(200).json({
-      originalTranscription,      // Para o sender ver (idioma original)
-      translatedTranscription,     // Para o receiver ver (idioma dele)
+      originalTranscription,
+      translatedTranscription,
       originalLanguage: senderLangCode,
       targetLanguage: receiverLangCode,
     });

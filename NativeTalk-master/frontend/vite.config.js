@@ -11,9 +11,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": {
-        target: "https://motor-diary-micro-latex.trycloudflare.com",
+        target: "http://localhost:5001",
         changeOrigin: true,
-        secure: true
+        secure: false
       },
     },
   },

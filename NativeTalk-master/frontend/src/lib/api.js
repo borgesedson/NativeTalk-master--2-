@@ -320,6 +320,22 @@ export const getAllUsers = async (filters = {}) => {
   }
 };
 
+export const getUserProfile = async (userId) => {
+  try {
+    const { data, error } = await db
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("getUserProfile error:", error);
+    throw error;
+  }
+};
+
 export const getFriends = async () => {
   try {
     const { data: { user } } = await auth.getCurrentUser();
@@ -641,9 +657,17 @@ export const getStreamToken = async () => {
       return { token: cachedToken };
     }
 
-    console.log('[Auth] Fetching fresh Stream token from Edge Function...');
-    const { data, error } = await insforge.functions.invoke('get-stream-token');
-    if (error) throw error;
+    console.log('[Auth] Fetching fresh Stream token from local backend...');
+    const { data: { session } } = await insforge.auth.getCurrentSession();
+    
+    const response = await fetch('/api/chat/token', {
+      headers: {
+        'Authorization': `Bearer ${session?.accessToken}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch stream token from server');
+    const data = await response.json();
 
     if (data?.token) {
       localStorage.setItem(CACHE_KEY, data.token);
@@ -755,42 +779,40 @@ export const translateMessage = async (text, targetUserId, forcedTargetLang = nu
   }
 };
 
-export const transcribeAudio = async (audioUrl, targetLanguage = 'en', sourceLanguage = 'pt') => {
+export const transcribeAudio = async (audioData, senderUserId, receiverUserId, transcription = null, from = null, to = null) => {
   try {
-    // 1. Usar Proxy do Backend (encaminha para Whisper VPS)
-    if (audioUrl) {
-      try {
-        console.log(`🎤 Transcrevendo via proxy backend: ${audioUrl}`);
-
-        const response = await fetch('/api/stt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            audio_url: audioUrl,
-            from: sourceLanguage,
-            to: targetLanguage
-          })
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          return {
-            originalTranscription: result.transcript,
-            translatedTranscription: result.translated,
-            detectedLanguage: result.language || sourceLanguage
-          };
-        }
-      } catch (vpsErr) {
-        console.warn("Proxy STT falhou:", vpsErr);
-        throw vpsErr;
+    // If first argument is an object (new style), destructure it
+    let payload = {};
+    if (typeof audioData === 'object' && audioData !== null && !audioData.audioData) {
+      payload = audioData;
+    } else {
+      // Positional arguments (legacy or simple calls)
+      // Check if it's an URL (InterpreterPage style)
+      if (typeof audioData === 'string' && audioData.startsWith('http')) {
+        // Fetch audio data if URL provided? Or just send URL?
+        // Backend currently expects base64 in audioData.
+        // Let's assume for now it's base64 or null.
+        payload = { audio_url: audioData, from: senderUserId, to: receiverUserId };
+        // Wait, if it's InterpreterPage, senderUserId is actually 'from' and receiverUserId is 'to'
+      } else {
+        payload = { audioData, senderUserId, receiverUserId, transcription, from, to };
       }
     }
+
+    const response = await fetch('/api/transcription/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error('Transcription failed');
+    return await response.json();
   } catch (error) {
     console.error("Erro na transcrição:", error);
     return {
-      originalTranscription: "🎤 Áudio",
-      translatedTranscription: "",
-      targetLanguage
+      originalTranscription: transcription || "🎤 Áudio",
+      translatedTranscription: transcription || "",
+      error: error.message
     };
   }
 };
@@ -802,9 +824,8 @@ export const uploadAudio = async (blob, mimeType = 'audio/webm;codecs=opus') => 
     throw new Error('Session expired');
   }
 
-  const ext = mimeType.includes('ogg') ? 'ogg' :
-    mimeType.includes('mp4') ? 'mp4' : 'webm';
-  const filename = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
+  const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+  const filename = `audio_${Date.now()}.${ext}`;
 
   const { data, error } = await insforge.storage
     .from('audio-messages')

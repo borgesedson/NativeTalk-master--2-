@@ -8,7 +8,8 @@ import { StreamVideoClient, StreamVideo } from '@stream-io/video-react-sdk';
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 import { useNavigate } from 'react-router';
 import useAuthUser from '../../hooks/useAuthUser';
-import { getStreamToken, translateMessage, getAllUsers } from '../../lib/api';
+import { getStreamToken, translateMessage, getAllUsers, getUserProfile } from '../../lib/api';
+import { LANGUAGES } from '../../constants';
 import DesktopChatLayout from '../layout/DesktopChatLayout';
 import MobileChatLayout from '../layout/MobileChatLayout';
 import useIsMobile from '../../hooks/useIsMobile';
@@ -20,6 +21,7 @@ import VoiceCallScreen from '../calls/VoiceCallScreen';
 import VideoCallScreen from '../calls/VideoCallScreen';
 import toast from 'react-hot-toast';
 import { uploadAudio, transcribeAudio } from '../../lib/api';
+import Logo from '../Logo';
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
@@ -117,8 +119,8 @@ const NavigationSidebar = () => {
     return (
         <div className="flex flex-col h-full items-center justify-between w-full">
             <div className="flex flex-col items-center gap-8 w-full mt-2">
-                <div onClick={() => navigate('/home')} className="size-12 rounded-xl bg-white/5 flex items-center justify-center text-[#0D7377] shadow-lg cursor-pointer hover:bg-white/10 transition-colors">
-                    <span className="material-symbols-outlined text-2xl font-bold">public</span>
+                <div onClick={() => navigate('/dashboard')} className="cursor-pointer hover:scale-105 transition-transform active:scale-95">
+                    <Logo size={48} className="!bg-transparent !border-none !shadow-none" />
                 </div>
                 <nav className="flex flex-col gap-6 w-full items-center text-slate-400">
                     <button onClick={() => navigate('/dashboard')} className={`relative flex items-center justify-center p-3 rounded-xl transition-all organic-press ${location.pathname === '/dashboard' || location.pathname === '/' ? 'bg-[#0D7377] text-white shadow-lg' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
@@ -130,6 +132,9 @@ const NavigationSidebar = () => {
                     </button>
                     <button onClick={() => navigate('/favorites')} className="flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group">
                         <span className="material-symbols-outlined text-[26px]">star</span>
+                    </button>
+                    <button onClick={() => navigate('/interpreter')} className="flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group" title="Modo Intérprete">
+                        <span className="material-symbols-outlined text-[26px]">translate</span>
                     </button>
                     <button onClick={() => navigate('/notifications')} className="relative flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group">
                         <span className="material-symbols-outlined text-[26px]">notifications</span>
@@ -419,7 +424,7 @@ const ContactsSidebarContent = () => {
 
     // A custom list filter to only show channels that match the client-side search text.
     // Stream's ChannelList exposes custom filtering via the `customFilter` prop which intercepts channels before rendering!
-    const channelFilterFn = (channels) => {
+    const channelRenderFilterFn = (channels) => {
         if (!channelSearch.trim()) return channels;
         const lowSearch = channelSearch.toLowerCase();
         return channels.filter(c => {
@@ -443,8 +448,8 @@ const ContactsSidebarContent = () => {
                             <span className="material-symbols-outlined text-[24px]">search</span>
                         </button>
                     )}
-                    <button onClick={() => setIsNewChatOpen(true)} className={`${isMobile ? 'size-10 bg-transparent' : 'size-10 bg-white/5'} rounded-full hover:bg-white/10 flex items-center justify-center text-slate-300 transition-colors`}>
-                        <span className="material-symbols-outlined text-[24px]">edit_square</span>
+                    <button onClick={() => setIsNewChatOpen(true)} className={`${isMobile ? 'size-10 bg-transparent' : 'size-10 bg-white/5 border border-white/10'} rounded-full hover:bg-white/10 flex items-center justify-center text-slate-300 transition-colors shadow-sm active:scale-95`}>
+                        <span className="material-symbols-outlined text-[20px]">edit_square</span>
                     </button>
                 </div>
             </div>
@@ -479,13 +484,17 @@ const ContactsSidebarContent = () => {
                         sort={sort}
                         options={options}
                         Preview={CustomConversationRow}
-                        customChannelFilterFn={channelFilterFn}
+                        channelRenderFilterFn={channelRenderFilterFn}
                         EmptyStateIndicator={() => (
                             <div className="text-center text-slate-400 mt-10 p-6 bg-white/5 rounded-xl border border-dashed border-white/10">
-                                <p className="mb-4 text-[13px] font-medium">Nenhuma conversa ainda</p>
-                                <button onClick={() => window.dispatchEvent(new CustomEvent('open-new-chat'))} className="text-primary hover:text-white transition-colors text-[13px] font-bold flex items-center justify-center gap-1 mx-auto bg-white/5 px-4 py-2 rounded-full">
-                                    Encontre alguém para conversar <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                                </button>
+                                <p className="mb-4 text-[13px] font-medium">
+                                    {channelSearch ? "Nenhuma conversa encontrada" : "Nenhuma conversa ainda"}
+                                </p>
+                                {!channelSearch && (
+                                    <button onClick={() => window.dispatchEvent(new CustomEvent('open-new-chat'))} className="text-primary hover:text-white transition-colors text-[13px] font-bold flex items-center justify-center gap-1 mx-auto bg-white/5 px-4 py-2 rounded-full">
+                                        Encontre alguém para conversar <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                                    </button>
+                                )}
                             </div>
                         )}
                         LoadingErrorIndicator={() => <div className="p-4 text-red-500 font-bold bg-red-500/10 rounded-lg border border-red-500/20 text-center m-4">Sem conexão com o chat! Verifique sua rede.</div>}
@@ -640,6 +649,7 @@ const CustomChatHeader = ({ onStartVoiceCall, onStartVideoCall }) => {
     const navigate = useNavigate();
     const [showSearch, setShowSearch] = useState(false);
     const [showOptions, setShowOptions] = useState(false);
+    const [showProfile, setShowProfile] = useState(false);
 
     const otherMember = Object.values(channel?.state?.members || {}).find(m => m.user.id !== client.user.id);
     const otherUser = otherMember?.user;
@@ -700,11 +710,6 @@ const CustomChatHeader = ({ onStartVoiceCall, onStartVideoCall }) => {
             </div>
 
             <div className="flex items-center gap-3">
-                <button
-                    onClick={() => setShowSearch(!showSearch)}
-                    className={`size-10 rounded-full border border-white/10 flex items-center justify-center transition-all duration-200 shadow-sm active:scale-95 ${showSearch ? 'bg-[#0D7377] text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'}`}>
-                    <span className="material-symbols-outlined text-[20px]">search</span>
-                </button>
                 <button onClick={() => onStartVideoCall(otherUser)} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-200 active:scale-95 shadow-sm">
                     <span className="material-symbols-outlined text-[20px]">videocam</span>
                 </button>
@@ -718,7 +723,7 @@ const CustomChatHeader = ({ onStartVoiceCall, onStartVideoCall }) => {
                     {showOptions && (
                         <div className="absolute right-0 top-12 w-56 bg-[#1E2A3A] border border-white/10 rounded-xl shadow-2xl z-50 py-2 animate-fadeIn flex flex-col">
                             <button
-                                onClick={() => { navigate('/settings'); setShowOptions(false); }}
+                                onClick={() => { setShowProfile(true); setShowOptions(false); }}
                                 className="w-full px-4 py-2.5 text-left text-[14px] text-white hover:bg-white/5 transition-colors flex items-center gap-3">
                                 <span className="material-symbols-outlined text-[18px] text-slate-400">person</span> Ver perfil
                             </button>
@@ -764,8 +769,122 @@ const CustomChatHeader = ({ onStartVoiceCall, onStartVideoCall }) => {
                     )}
                 </div>
             </div>
+            {/* Profile Modal */}
+            <UserProfileModal 
+                user={otherUser} 
+                isOpen={showProfile} 
+                onClose={() => setShowProfile(false)} 
+            />
+
             {/* Click outside detection hack for options menu usually requires a ref, this is a quick visual implementation */}
             {showOptions && <div className="fixed inset-0 z-40" onClick={() => setShowOptions(false)}></div>}
+        </div>
+    );
+};
+
+const UserProfileModal = ({ user, isOpen, onClose }) => {
+    const [fullProfile, setFullProfile] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && user?.id) {
+            const fetchProfile = async () => {
+                setLoading(true);
+                try {
+                    const data = await getUserProfile(user.id);
+                    if (data) setFullProfile(data);
+                } catch (err) {
+                    console.error("Error fetching full profile:", err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchProfile();
+        } else if (!isOpen) {
+            setFullProfile(null);
+        }
+    }, [isOpen, user?.id]);
+
+    if (!isOpen || !user) return null;
+
+    // Use fullProfile if available, fallback to Stream user data
+    const profileData = fullProfile || {
+        name: user.name,
+        id: user.id,
+        image: user.image,
+        bio: user.bio,
+        location: user.location,
+        native_language: user.native_language
+    };
+
+    const langCode = profileData.native_language || 'en';
+    const flag = LANGUAGE_FLAGS[langCode] || '🌐';
+    const langLabel = LANGUAGES.find(l => l.code === langCode)?.label || langCode;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
+            <div className="w-full max-w-md bg-[#111D2E] rounded-[32px] border border-white/10 shadow-2xl overflow-hidden relative">
+                {/* Header Decoration */}
+                <div className="h-32 bg-gradient-to-br from-[#0D7377]/30 to-transparent relative">
+                    <button 
+                        onClick={onClose}
+                        className="absolute top-6 right-6 size-10 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white transition-all active:scale-90 z-10"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+
+                {/* Avatar */}
+                <div className="px-8 -mt-16 relative">
+                    <div className="size-32 rounded-[28px] border-4 border-[#111D2E] bg-cover bg-center shadow-xl mb-6 bg-slate-800"
+                        style={{ backgroundImage: `url('${profileData.image || profileData.avatar_url || "https://ui-avatars.com/api/?name=" + profileData.name}')` }}>
+                    </div>
+
+                    <div className="mb-8">
+                        <div className="flex items-center gap-2 mb-1">
+                            <h2 className="text-2xl font-bold text-white">{profileData.name}</h2>
+                            <span className="text-xl" title={`Idioma: ${langCode}`}>{flag}</span>
+                        </div>
+                        <p className="text-slate-400 font-medium pb-2 border-b border-white/5">@{profileData.id}</p>
+                    </div>
+
+                    <div className="space-y-6 pb-10">
+                        {loading ? (
+                            <div className="flex justify-center py-4"><span className="loading loading-spinner text-[#0D7377]"></span></div>
+                        ) : (
+                            <>
+                                {profileData.bio && (
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-bold text-[#0D7377] uppercase tracking-wider">Sobre</label>
+                                        <p className="text-slate-300 text-[15px] leading-relaxed italic">"{profileData.bio}"</p>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                                        <span className="material-symbols-outlined text-[#0D7377] text-[20px] mb-2">location_on</span>
+                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter">Localização</p>
+                                        <p className="text-white text-[14px] font-medium truncate">{profileData.location || "Não informada"}</p>
+                                    </div>
+                                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                                        <span className="material-symbols-outlined text-[#0D7377] text-[20px] mb-2">language</span>
+                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter">Idioma Nativo</p>
+                                        <p className="text-white text-[14px] font-medium truncate">{langLabel}</p>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        <button 
+                            onClick={onClose}
+                            className="w-full py-4 bg-[#0D7377] hover:bg-[#0a5a5e] text-white font-bold rounded-2xl transition-all shadow-lg shadow-[#0D7377]/20 active:scale-[0.98] mt-4"
+                        >
+                            Fechar Perfil
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div className="fixed inset-0 -z-10" onClick={onClose}></div>
         </div>
     );
 };

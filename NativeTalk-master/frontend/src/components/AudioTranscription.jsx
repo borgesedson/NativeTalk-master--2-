@@ -53,17 +53,26 @@ const AudioTranscription = ({ currentUserId, otherUserId, onTranscription }) => 
 
     // Configurar idioma do usuário
     const languageMap = {
-      'english': 'en-US',
-      'portuguese': 'pt-BR',
-      'spanish': 'es-ES',
-      'french': 'fr-FR',
-      'german': 'de-DE',
-      'japanese': 'ja-JP',
-      'chinese': 'zh-CN',
+      'english': 'en',
+      'portuguese': 'pt',
+      'spanish': 'es',
+      'french': 'fr',
+      'german': 'de',
+      'japanese': 'ja',
+      'chinese': 'zh',
+      'pt': 'pt',
+      'en': 'en',
+      'es': 'es'
     };
 
-    const userLang = authUser?.native_language?.toLowerCase() || 'english';
-    recognition.lang = languageMap[userLang] || 'en-US';
+    const userLang = authUser?.native_language?.toLowerCase() || 'en';
+    recognition.lang = userLang.length === 2 ? (userLang === 'pt' ? 'pt-BR' : userLang === 'en' ? 'en-US' : userLang) : (languageMap[userLang] || 'en-US');
+    
+    // For recognition.lang specifically, it often needs the locale format (en-US, pt-BR)
+    // but for our internal API we want the 2-letter code.
+    const internalLangCode = languageMap[userLang] || (userLang.length === 2 ? userLang : 'en');
+    recognition.lang = internalLangCode === 'pt' ? 'pt-BR' : internalLangCode === 'en' ? 'en-US' : internalLangCode;
+
     recognition.continuous = false;
     recognition.interimResults = true;
 
@@ -91,7 +100,9 @@ const AudioTranscription = ({ currentUserId, otherUserId, onTranscription }) => 
             null, // Sem áudio, já temos a transcrição
             currentUserId,
             otherUserId,
-            transcript // Passar a transcrição do Web Speech
+            transcript, // Passar a transcrição do Web Speech
+            internalLangCode, // Idioma de origem detectado
+            null // Idioma de destino (backend deve tentar inferir ou usar default)
           );
 
           console.log("🌐 Tradução recebida:", result);
