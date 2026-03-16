@@ -86,7 +86,7 @@ const CallPage = () => {
   }, [isCallActive]);
 
   const initializeSocket = () => {
-    const serverUrl = import.meta.env.VITE_SERVER_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:5001` : 'http://localhost:5001');
+    const serverUrl = (typeof window !== 'undefined' ? window.location.origin : '');
     socketRef.current = io(serverUrl);
     socketRef.current.emit('join-user-room', user.id);
 

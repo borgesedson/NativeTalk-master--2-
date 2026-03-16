@@ -11,7 +11,7 @@ export const getImageUrl = (path) => {
   }
 
   if (path.startsWith('/uploads')) {
-    return typeof window !== 'undefined' ? `http://${window.location.hostname}:5001${path}` : `http://localhost:5001${path}`;
+    return path;
   }
 
   return path;
