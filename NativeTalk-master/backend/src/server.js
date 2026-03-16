@@ -17,6 +17,8 @@ import translationRoutes from "./routes/translation.route.js";
 import transcriptionRoutes from "./routes/transcription.route.js";
 import audioRoutes from "./routes/audio.route.js";
 import groupRoutes from "./routes/group.routes.js";
+import liveRoutes from "./routes/live.route.js";
+import { StreamChat } from "stream-chat";
 
 import { translateText } from "./lib/translation.js"; // ✅ Importar função de tradução
 
@@ -32,12 +34,14 @@ const io = new Server(server, {
       const allowedOrigins = [
         "https://nativetalk-thlm.onrender.com",
       ];
-      if (allowedOrigins.includes(origin)) {
+      // Allow any Vercel subdomain and exact matches
+      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
       return callback(new Error('Origin not allowed by CORS'), false);
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
   }
 });
 
@@ -79,7 +83,7 @@ app.use(
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
         callback(null, true);
       } else {
         if (process.env.NODE_ENV !== "production") {
@@ -91,6 +95,7 @@ app.use(
     },
     credentials: true,
     optionsSuccessStatus: 200,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
   })
 );
 
@@ -225,7 +230,8 @@ app.post('/api/translate', async (req, res) => {
     // VPS expects: text, from, to (NOT source/target!)
     const vpsPayload = { text, from, to };
 
-    const response = await fetch('http://82.25.64.9:5000/translate', {
+    const argosUrl = process.env.VITE_ARGOS_API_URL || 'http://82.25.64.9:5000/translate';
+    const response = await fetch(argosUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(vpsPayload)
@@ -291,16 +297,17 @@ app.post('/api/translate', async (req, res) => {
 app.post('/api/stt', async (req, res) => {
   try {
     const { audio, audio_url, from, to } = req.body;
-    console.log(`[API Proxy] STT Requested: from ${from} to ${to}`);
+    console.log(`[STT] Requested: from ${from} to ${to}`);
 
     if (!audio && !audio_url) return res.status(400).json({ error: 'Audio data (base64) or audio_url is required' });
 
-    // Build payload — send whatever the client provided
     const payload = { from, to };
     if (audio) payload.audio = audio;
     if (audio_url) payload.audio_url = audio_url;
 
-    const response = await fetch('http://82.25.64.9:5001/stt-and-translate', {
+    console.log(`[STT] Calling Whisper VPS...`);
+    const whisperUrl = process.env.VITE_WHISPER_API_URL || 'http://82.25.64.9:5001/stt-and-translate';
+    const response = await fetch(whisperUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -308,15 +315,15 @@ app.post('/api/stt', async (req, res) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error(`[API Proxy] Whisper VPS error (${response.status}):`, errText);
+      console.error(`[STT] Whisper VPS error (${response.status}):`, errText);
       return res.status(response.status).json({ error: 'Whisper VPS returned an error' });
     }
 
     const data = await response.json();
-    console.log('[API Proxy] STT success');
+    console.log('[STT] Success:', data.transcript?.substring(0, 50));
     res.json(data);
   } catch (error) {
-    console.error('[API Proxy] STT Error:', error.message);
+    console.error('[STT] Error:', error.message);
     res.status(500).json({ error: 'Internal server error in STT proxy' });
   }
 });
@@ -331,6 +338,7 @@ app.use("/api/translation", translationRoutes);
 app.use("/api/transcription", transcriptionRoutes);
 app.use("/api/audio", audioRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/live", liveRoutes);
 const frontendPath = path.join(__dirname, "../../frontend_new/out"); // Assuming static export or similar
 
 if (fs.existsSync(frontendPath)) {

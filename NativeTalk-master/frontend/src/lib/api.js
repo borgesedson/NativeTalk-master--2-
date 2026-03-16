@@ -645,35 +645,20 @@ export const getGroups = async () => {
 
 export const getStreamToken = async () => {
   try {
-    const CACHE_KEY = 'stream_chat_token';
-    const CACHE_TIME_KEY = 'stream_chat_token_time';
-    const CACHE_EXPIRY = 20 * 60 * 1000; // 20 minutes
-
-    const cachedToken = localStorage.getItem(CACHE_KEY);
-    const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
-
-    if (cachedToken && cachedTime && (Date.now() - parseInt(cachedTime, 10)) < CACHE_EXPIRY) {
-      console.log('[Auth] Using cached Stream token');
-      return { token: cachedToken };
-    }
-
     console.log('[Auth] Fetching fresh Stream token from local backend...');
     const { data: { session } } = await insforge.auth.getCurrentSession();
     
+    if (!session?.accessToken) throw new Error('No active session token');
+
     const response = await fetch('/api/chat/token', {
       headers: {
-        'Authorization': `Bearer ${session?.accessToken}`
+        'Authorization': `Bearer ${session.accessToken}`
       }
     });
 
     if (!response.ok) throw new Error('Failed to fetch stream token from server');
+    
     const data = await response.json();
-
-    if (data?.token) {
-      localStorage.setItem(CACHE_KEY, data.token);
-      localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-    }
-
     return data;
   } catch (error) {
     console.error("Token fetch error:", error);

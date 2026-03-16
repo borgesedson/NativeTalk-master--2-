@@ -27,10 +27,12 @@ import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
 import StitchDemoPage from './pages/StitchDemoPage';
 import InterpreterPage from './pages/InterpreterPage';
+import LiveSessionPage from './pages/LiveSessionPage';
+import LiveJoinPage from './pages/LiveJoinPage';
 
 const NavigationHandler = () => {
   const location = useLocation();
-  const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call') || location.pathname.includes('/interpreter');
+  const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call') || location.pathname.includes('/interpreter') || location.pathname.includes('/live');
   const isAuth = ['/', '/login', '/register', '/onboarding', '/profile-setup', '/stitch-demo'].includes(location.pathname);
 
   if (isChat || isAuth) return null;
@@ -116,6 +118,8 @@ const App = () => {
               <Route path="/groups/:channelId" element={<ProtectedRoute><GroupChatPage /></ProtectedRoute>} />
 
               <Route path="/interpreter" element={<ProtectedRoute><InterpreterPage /></ProtectedRoute>} />
+              <Route path="/live" element={<ProtectedRoute><LiveSessionPage /></ProtectedRoute>} />
+              <Route path="/live/:code" element={<LiveJoinPage />} />
 
               <Route path="/call/:callId?" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
               <Route path="/call/video/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />

@@ -127,15 +127,16 @@ const NavigationSidebar = () => {
                         {(location.pathname === '/dashboard' || location.pathname === '/') && <div className="absolute left-[-16px] top-1/2 -translate-y-1/2 w-1 h-8 bg-[#0D7377] rounded-r-full"></div>}
                         <span className="material-symbols-outlined text-[26px]">chat</span>
                     </button>
-                    <button onClick={() => window.dispatchEvent(new CustomEvent('open-new-chat'))} className={`relative flex items-center justify-center p-3 rounded-xl transition-all organic-press ${location.pathname === '/contacts' ? 'bg-[#0D7377] text-white shadow-lg' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
+                    <button onClick={() => navigate('/contacts')} className={`relative flex items-center justify-center p-3 rounded-xl transition-all organic-press ${location.pathname === '/contacts' ? 'bg-[#0D7377] text-white shadow-lg' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
                         <span className="material-symbols-outlined text-[26px]">group</span>
+                    </button>
+                    <button onClick={() => navigate('/live')} className={`relative flex items-center justify-center p-3 rounded-xl transition-all organic-press ${location.pathname.startsWith('/live') ? 'bg-[#0D7377] text-white shadow-lg' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`} title="Sessão ao Vivo">
+                        <span className="material-symbols-outlined text-[26px]">cell_tower</span>
                     </button>
                     <button onClick={() => navigate('/favorites')} className="flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group">
                         <span className="material-symbols-outlined text-[26px]">star</span>
                     </button>
-                    <button onClick={() => navigate('/interpreter')} className="flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group" title="Modo Intérprete">
-                        <span className="material-symbols-outlined text-[26px]">translate</span>
-                    </button>
+
                     <button onClick={() => navigate('/notifications')} className="relative flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group">
                         <span className="material-symbols-outlined text-[26px]">notifications</span>
                         {/* Fake badge mapping to real future hook */}
@@ -894,38 +895,45 @@ const CustomMessageInputUI = () => {
     const { channel } = useChatContext();
     const { authUser } = useAuthUser();
     const fileInputRef = useRef(null);
+    const [isProcessingAudio, setIsProcessingAudio] = useState(false);
 
     const handleSendAudio = async (audioBlob, _, duration) => {
         if (!channel) return;
-        const toastId = toast.loading('🔄 Transcrevendo...', { id: 'audio-flow' });
+        setIsProcessingAudio(true);
+        const toastId = toast.loading('🎤 Processando áudio...', { id: 'audio-flow' });
         try {
-            // 0. Preprocess audio for whisper (convert to 16kHz mono + apply highpass noise reduction)
-            toast.loading('🔊 Processando áudio...', { id: toastId });
+            // 1. Preprocess audio for whisper
             const processedBlob = await preprocessAudio(audioBlob);
 
-            // 1. Converter para base64 como solicitado
-            const base64 = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result.split(',')[1]);
-                reader.readAsDataURL(processedBlob);
-            });
-
-            // 2. Upload para Storage (URL pública)
+            // 2. Upload to Storage
             toast.loading('☁️ Enviando áudio...', { id: toastId });
             const uploadResult = await uploadAudio(processedBlob, 'audio/wav');
             const audioUrl = uploadResult?.url || uploadResult;
             if (!audioUrl) throw new Error("Erro ao fazer upload do áudio");
 
-            toast.loading('🌐 Traduzindo...', { id: toastId });
+            // 3. STT + Translation via Backend (synchronous — waits for Whisper)
+            toast.loading('🌐 Transcrevendo e traduzindo...', { id: toastId });
 
-            // 3. STT + Tradução via Proxy do Backend
+            // Resolve receiver's language for translation target
+            const otherMemberId = Object.keys(channel.state.members).find(id => id !== authUser.id);
+            const otherMember = channel.state.members[otherMemberId]?.user;
+            const toLang = getLanguageCode(
+                otherMember?.native_language ||
+                otherMember?.nativeLanguage ||
+                otherMember?.language ||
+                'en'
+            );
+
+            console.log('[Audio] from: auto (Whisper detect) | to:', toLang);
+            console.log('[Audio] contactUser:', otherMember?.native_language);
+
             const response = await fetch('/api/stt', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    audio: base64,
-                    from: getLanguageCode(authUser?.native_language || 'pt'),
-                    to: getLanguageCode(channel.state.members[Object.keys(channel.state.members).find(id => id !== authUser.id)]?.user?.native_language || 'en')
+                    audio_url: audioUrl,
+                    from: 'auto',
+                    to: toLang
                 })
             });
 
@@ -934,16 +942,14 @@ const CustomMessageInputUI = () => {
 
             const transcript = result?.transcript || '';
             const translatedText = result?.translated || '';
-
+            const detectedLang = result?.detected_language || authUser?.native_language || 'en';
             if (!transcript) throw new Error("Não foi possível processar o áudio");
 
-            toast.loading('Enviando...', { id: toastId });
-
-            console.log('[Send] audioUrl type:', typeof audioUrl, 'value:', audioUrl);
-
+            // 4. Send message with final transcript + translation
             await channel.sendMessage({
-                text: transcript || '',
-                originalLanguage: authUser?.native_language || 'pt',
+                text: transcript,
+                originalLanguage: detectedLang,
+                nativeLanguage: detectedLang,
                 translation: translatedText,
                 attachments: [{
                     type: 'audio',
@@ -956,9 +962,12 @@ const CustomMessageInputUI = () => {
             });
 
             toast.success('✅ Enviado!', { id: toastId });
+            console.log('[Audio] Message sent with transcript:', transcript.substring(0, 50));
         } catch (error) {
-            console.error("Audio flow error:", error);
+            console.error('[Audio] Error:', error);
             toast.error(error.message || 'Erro ao processar áudio', { id: toastId });
+        } finally {
+            setIsProcessingAudio(false);
         }
     };
 
@@ -1031,6 +1040,10 @@ const CustomMessageInputUI = () => {
                     >
                         <span className="material-symbols-outlined text-[22px] translate-x-[2px]">send</span>
                     </button>
+                ) : isProcessingAudio ? (
+                    <div className="flex items-center justify-center size-12 rounded-full bg-[#0D7377]/30 animate-pulse">
+                        <span className="animate-spin material-symbols-outlined text-[22px] text-[#0D7377]">sync</span>
+                    </div>
                 ) : (
                     <AudioRecorder onSendAudio={handleSendAudio} />
                 )}
@@ -1243,9 +1256,9 @@ const StitchChat = () => {
     }, [user]);
 
     const { data: tokenData } = useQuery({
-        queryKey: ["streamToken"],
+        queryKey: ["streamToken", user?.id],
         queryFn: getStreamToken,
-        enabled: !!user,
+        enabled: !!user?.id,
         staleTime: 20 * 60 * 1000,
     });
 

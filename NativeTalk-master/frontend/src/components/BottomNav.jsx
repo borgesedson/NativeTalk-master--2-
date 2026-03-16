@@ -7,6 +7,7 @@ const BottomNav = () => {
 
     const navItems = [
         { icon: 'chat', label: 'Conversas', path: '/dashboard', hasNotification: true },
+        { icon: 'cell_tower', label: 'Ao Vivo', path: '/live' },
         { icon: 'group', label: 'Contatos', path: '/contacts' },
         { icon: 'translate', label: 'Intérprete', path: '/interpreter' },
         { icon: 'notifications', label: 'Notificações', path: '/notifications' },

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Logo = ({ size = 48, fontSize = '24px', className = "" }) => {
+const Logo = ({ size = 48, className = "" }) => {
     return (
         <div
             className={`flex items-center justify-center bg-[#111D2E] border border-white/10 rounded-xl shadow-lg shadow-[#0D7377]/10 relative overflow-hidden ${className}`}

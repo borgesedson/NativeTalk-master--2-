@@ -129,7 +129,7 @@ const GroupChatPage = () => {
     });
 
     const { data: tokenData } = useQuery({
-        queryKey: ["streamToken"],
+        queryKey: ["streamToken", user?.id],
         queryFn: getStreamToken,
         enabled: !!authUser,
         staleTime: 20 * 60 * 1000,
