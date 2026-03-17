@@ -2,12 +2,11 @@ import axios from "axios";
 
 // ✅ GARANTIR URL CORRETA EM PRODUÇÃO
 // ✅ GARANTIR URL CORRETA
-const API_BASE_URL = (typeof window !== 'undefined' ? window.location.origin : '');
-
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 console.log('🔗 Axios Base URL:', API_BASE_URL);
 
 export const axiosInstance = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: API_BASE_URL,
   timeout: 30000,
   withCredentials: true,
   headers: {

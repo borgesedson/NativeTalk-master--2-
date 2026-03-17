@@ -1,9 +1,8 @@
 import { insforge, db, auth, storage } from './insforge';
 import { getLanguageCode } from './utils';
 
-// VPS Config
-const ARGOS_URL = 'http://82.25.64.9:5000';
-const WHISPER_URL = 'http://82.25.64.9:5001';
+// Networking Config
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // Helper: converte "English"/"en"/etc para código ISO
 const _langCode = (lang) => getLanguageCode(lang);
@@ -650,7 +649,7 @@ export const getStreamToken = async () => {
     
     if (!session?.accessToken) throw new Error('No active session token');
 
-    const response = await fetch('/api/chat/token', {
+    const response = await fetch(`${API_BASE_URL}/chat/token`, {
       headers: {
         'Authorization': `Bearer ${session.accessToken}`
       }
@@ -694,7 +693,7 @@ export const translateMessage = async (text, targetUserId, forcedTargetLang = nu
     if (navigator.onLine) {
       try {
         console.log(`[API] Translation proxy call: ${sourceLang} -> ${targetLang}`);
-        const response = await fetch('/api/translate', {
+        const response = await fetch(`${API_BASE_URL}/translate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -784,7 +783,7 @@ export const transcribeAudio = async (audioData, senderUserId, receiverUserId, t
       }
     }
 
-    const response = await fetch('/api/transcription/transcribe', {
+    const response = await fetch(`${API_BASE_URL}/transcription/transcribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
