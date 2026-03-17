@@ -4,7 +4,7 @@ export const capitialize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
  * Converte caminhos de imagem relativos para URLs completas
  */
 export const getImageUrl = (path) => {
-  if (!path || path.trim() === '') return null;
+  if (!path || typeof path !== 'string' || path.trim() === '') return null;
 
   if (path.startsWith('http') || path.startsWith('//')) {
     return path;
@@ -23,7 +23,8 @@ export const getImageUrl = (path) => {
 export const getAvatarUrl = (avatarUrl, name = 'User') => {
   const url = getImageUrl(avatarUrl);
   if (url) return url;
-  const seed = encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'));
+  const safeName = (typeof name === 'string' ? name : 'User');
+  const seed = encodeURIComponent(safeName.toLowerCase().replace(/\s+/g, '-'));
   return `https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}&size=128`;
 };
 
@@ -72,7 +73,7 @@ const LANGUAGE_CODES = {
  */
 export function getLanguageCode(languageName) {
   if (!languageName) return 'en';
-  const normalized = languageName.toLowerCase().trim();
+  const normalized = languageName?.toLowerCase()?.trim() || 'en';
 
   // If it's a locale code like 'en-US', 'pt-BR', extract the first 2 chars
   if (normalized.includes('-') && normalized.length >= 4) {

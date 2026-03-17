@@ -39,7 +39,7 @@ const ContactsPage = () => {
 
   // Debounced Search Effect
   useEffect(() => {
-    if (!searchQuery.trim() || activeTab !== 'discover') {
+    if (!searchQuery?.trim() || activeTab !== 'discover') {
       setSearchResults([]);
       return;
     }

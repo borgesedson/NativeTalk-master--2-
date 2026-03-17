@@ -73,7 +73,7 @@ const AutoTranscription = ({ currentUserId, otherUserId, onTranscription }) => {
             setCurrentTranscription(transcript);
 
             // Se for resultado final, enviar para tradução
-            if (lastResult.isFinal && transcript.trim().length > 0) {
+            if (lastResult.isFinal && (transcript?.trim()?.length || 0) > 0) {
                 console.log("✅ Transcrição final, enviando para tradução...");
                 setIsProcessing(true);
 

@@ -34,6 +34,7 @@ const ChatPage = () => {
   const [chatClient, setChatClient] = useState(null);
   const [channel, setChannel] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [streamReady, setStreamReady] = useState(false);
   const [translations, setTranslations] = useState({});
   const translatingRef = useRef(new Set());
   const initRef = useRef(false);
@@ -60,12 +61,27 @@ const ChatPage = () => {
   });
 
   useEffect(() => {
+    if (chatClient?.userID && chatClient.userID === authUser?.id) {
+      setStreamReady(true);
+    } else {
+      setStreamReady(false);
+    }
+  }, [chatClient?.userID, authUser?.id]);
+
+  useEffect(() => {
     if (!tokenData?.token || !authUser || initRef.current) return;
     let cleanupFn = null;
 
     async function initChat() {
       try {
         const client = clientRef.current;
+        
+        // Validate token before passing to Stream SDK
+        if (!tokenData.token || typeof tokenData.token !== 'string') {
+          console.error('[Stream] Invalid token in ChatPage:', tokenData.token);
+          return;
+        }
+        
         await client.connectUser(
           { id: authUser.id, name: authUser.name, image: getAvatarUrl(authUser.avatar_url, authUser.name) },
           tokenData.token
@@ -258,7 +274,7 @@ const ChatPage = () => {
   };
 
   // 4. Show skeleton while loading
-  if (loading || !chatClient || !channel) return (
+  if (loading || !chatClient || !channel || !streamReady) return (
     <div className="flex flex-col h-[100dvh] w-full bg-[#0D2137]">
       <div className="h-[60px] md:h-[88px] shrink-0 border-b border-white/5 bg-transparent pt-[env(safe-area-inset-top)]"></div>
       <div className="p-4 flex flex-col gap-3 flex-1 overflow-hidden opacity-50">

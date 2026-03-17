@@ -39,7 +39,7 @@ const CreateGroupModal = ({ isOpen, onClose, onSuccess }) => {
 
     const handleCreateGroup = (e) => {
         e.preventDefault();
-        if (!name.trim()) return toast.error("Please enter a group name");
+        if (!name?.trim()) return toast.error("Please enter a group name");
         if (selectedUsers.length === 0) {
             return toast.error("Please select at least one member");
         }
@@ -248,12 +248,12 @@ const CreateGroupModal = ({ isOpen, onClose, onSuccess }) => {
                                 Cancel
                             </button>
                             <button
-                                className={`px-8 py-3 rounded-2xl font-black text-sm transition-all shadow-xl shadow-primary/10 flex items-center gap-2 active:scale-95 ${(!name.trim() || selectedUsers.length === 0)
+                                className={`px-8 py-3 rounded-2xl font-black text-sm transition-all shadow-xl shadow-primary/10 flex items-center gap-2 active:scale-95 ${(!name?.trim() || selectedUsers.length === 0)
                                         ? "bg-white/5 text-gray-500 cursor-not-allowed border border-white/5"
                                         : "bg-primary text-white hover:bg-primary-focus border border-primary/20"
                                     }`}
                                 onClick={handleCreateGroup}
-                                disabled={createGroupMutation.isPending || !name.trim() || selectedUsers.length === 0}
+                                disabled={createGroupMutation.isPending || !name?.trim() || selectedUsers.length === 0}
                             >
                                 {createGroupMutation.isPending ? (
                                     <>

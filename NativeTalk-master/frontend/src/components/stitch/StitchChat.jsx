@@ -177,10 +177,11 @@ const NavigationSidebar = () => {
 
 const OnlineUsersRow = () => {
     const { client } = useChatContext();
-    const [onlineUsers, setOnlineUsers] = useState([]);
     const currentUser = client.user;
+    const [onlineUsers, setOnlineUsers] = useState([]);
 
     useEffect(() => {
+        if (!currentUser?.id) return;
         const fetchUsers = async () => {
             try {
                 const res = await client.queryUsers(
@@ -199,7 +200,7 @@ const OnlineUsersRow = () => {
         const handlePresence = () => fetchUsers();
         client.on('user.presence.changed', handlePresence);
         return () => client.off('user.presence.changed', handlePresence);
-    }, [client, currentUser.id]);
+    }, [client, currentUser?.id]);
 
     if (onlineUsers.length === 0) return null; // "No online users: Hide the online users row entirely"
 
@@ -224,7 +225,7 @@ const CustomConversationRow = (props) => {
     const currentUser = client.user;
 
     // Fallback if members data is somehow empty
-    const otherMember = Object.values(channel.state.members || {}).find(m => m.user.id !== currentUser.id);
+    const otherMember = Object.values(channel.state.members || {}).find(m => m.user.id !== currentUser?.id);
     const otherUser = otherMember?.user;
 
     const unseenCount = channel.countUnread();
@@ -291,7 +292,7 @@ const NewChatModal = ({ isOpen, onClose }) => {
             return;
         }
         const delayDebounceFn = setTimeout(async () => {
-            if (searchQuery.trim().length > 1) {
+            if (searchQuery?.trim().length > 1) {
                 setLoading(true);
                 try {
                     const response = await getAllUsers({ name: searchQuery });
@@ -387,35 +388,24 @@ const ContactsSidebarContent = () => {
     const [isNewChatOpen, setIsNewChatOpen] = useState(false);
     const [channelSearch, setChannelSearch] = useState("");
 
-    if (!currentUser?.id) {
-        console.log('[Mobile] currentUser not ready yet, waiting...');
-        return <div className="p-4 space-y-4">
-            {[1, 2, 3].map(i => (
-                <div key={i} className="flex gap-3 animate-pulse">
-                    <div className="size-12 rounded-full bg-white/5 shrink-0"></div>
-                    <div className="flex-1 py-1 space-y-2">
-                        <div className="h-3 bg-white/5 rounded w-1/2"></div>
-                        <div className="h-3 bg-white/5 rounded w-3/4"></div>
-                    </div>
-                </div>
-            ))}
-        </div>;
-    }
+    // Safely extract userId - MUST be a valid string for Stream SDK
+    const userId = currentUser?.id;
 
     const filters = useMemo(() => ({
         type: 'messaging',
-        members: { $in: [currentUser.id] }
-    }), [currentUser.id]);
+        members: { $in: [userId || '__placeholder__'] }
+    }), [userId]);
 
     const sort = useMemo(() => ({ last_message_at: -1 }), []);
     const options = useMemo(() => ({ limit: 20 }), []);
 
-    // Add Debug Logs
+    // Debug Logs
     useEffect(() => {
-        console.log('[Mobile] currentUser:', currentUser?.id);
+        console.log('[Mobile] currentUser:', userId);
+        console.log('[Mobile] currentUser id type:', typeof userId);
         console.log('[Mobile] Stream client connected:', client?.userID);
-        console.log('[Mobile] ChannelList filters:', filters);
-    }, [currentUser?.id, client?.userID, filters]);
+        console.log('[Mobile] ChannelList filters:', JSON.stringify(filters));
+    }, [userId, client?.userID, filters]);
 
     useEffect(() => {
         const handleOpen = () => setIsNewChatOpen(true);
@@ -424,18 +414,35 @@ const ContactsSidebarContent = () => {
     }, []);
 
     // A custom list filter to only show channels that match the client-side search text.
-    // Stream's ChannelList exposes custom filtering via the `customFilter` prop which intercepts channels before rendering!
     const channelRenderFilterFn = (channels) => {
-        if (!channelSearch.trim()) return channels;
-        const lowSearch = channelSearch.toLowerCase();
+        if (!channelSearch?.trim()) return channels;
+        const lowSearch = (channelSearch?.toLowerCase() || '');
         return channels.filter(c => {
-            const otherMember = Object.values(c.state.members || {}).find(m => m.user.id !== currentUser.id);
+            const otherMember = Object.values(c.state.members || {}).find(m => m.user.id !== userId);
             const name = c.data?.name || otherMember?.user?.name || '';
-            return name.toLowerCase().includes(lowSearch);
+            return (name?.toLowerCase() || '').includes(lowSearch);
         });
     };
 
     const isMobile = useIsMobile();
+
+    // Guard: Don't render ChannelList until userId and Client are ready
+    if (!userId || !client?.userID || typeof userId !== 'string') {
+        console.log('[Mobile] ChannelList not ready yet (userID mismatch or missing), waiting...');
+        return (
+            <div className="p-4 space-y-4">
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="flex gap-3 animate-pulse">
+                        <div className="size-12 rounded-full bg-white/5 shrink-0"></div>
+                        <div className="flex-1 py-1 space-y-2">
+                            <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                            <div className="h-3 bg-white/5 rounded w-3/4"></div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div className="h-full bg-transparent flex flex-col w-full text-white relative">
@@ -677,7 +684,7 @@ const CustomChatHeader = ({ onStartVoiceCall, onStartVideoCall }) => {
                             placeholder="Pesquisar nesta conversa..."
                             className="bg-transparent text-sm w-full outline-none text-white placeholder-slate-500"
                             onKeyDown={async (e) => {
-                                if (e.key === 'Enter' && e.target.value.trim()) {
+                                if (e.key === 'Enter' && e?.target?.value?.trim()) {
                                     const query = e.target.value.trim();
                                     try {
                                         const res = await client.search({
@@ -771,10 +778,10 @@ const CustomChatHeader = ({ onStartVoiceCall, onStartVideoCall }) => {
                 </div>
             </div>
             {/* Profile Modal */}
-            <UserProfileModal 
-                user={otherUser} 
-                isOpen={showProfile} 
-                onClose={() => setShowProfile(false)} 
+            <UserProfileModal
+                user={otherUser}
+                isOpen={showProfile}
+                onClose={() => setShowProfile(false)}
             />
 
             {/* Click outside detection hack for options menu usually requires a ref, this is a quick visual implementation */}
@@ -827,7 +834,7 @@ const UserProfileModal = ({ user, isOpen, onClose }) => {
             <div className="w-full max-w-md bg-[#111D2E] rounded-[32px] border border-white/10 shadow-2xl overflow-hidden relative">
                 {/* Header Decoration */}
                 <div className="h-32 bg-gradient-to-br from-[#0D7377]/30 to-transparent relative">
-                    <button 
+                    <button
                         onClick={onClose}
                         className="absolute top-6 right-6 size-10 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white transition-all active:scale-90 z-10"
                     >
@@ -876,7 +883,7 @@ const UserProfileModal = ({ user, isOpen, onClose }) => {
                             </>
                         )}
 
-                        <button 
+                        <button
                             onClick={onClose}
                             className="w-full py-4 bg-[#0D7377] hover:bg-[#0a5a5e] text-white font-bold rounded-2xl transition-all shadow-lg shadow-[#0D7377]/20 active:scale-[0.98] mt-4"
                         >
@@ -999,7 +1006,7 @@ const CustomMessageInputUI = () => {
 
     const onSubmit = (e) => {
         e.preventDefault();
-        if (!text.trim()) return;
+        if (!text?.trim()) return;
         channel.sendMessage({
             text,
             originalLanguage: authUser?.native_language || 'pt'
@@ -1033,7 +1040,7 @@ const CustomMessageInputUI = () => {
                 />
             </div>
             <div className="shrink-0 mb-[4px] ml-2 flex items-center justify-center">
-                {text.trim().length > 0 ? (
+                {(text?.trim()?.length || 0) > 0 ? (
                     <button
                         onClick={onSubmit}
                         className="flex items-center justify-center size-12 rounded-full bg-[#0D7377] text-white hover:bg-[#0a5a5e] transition-all organic-press cursor-pointer shadow-lg"
@@ -1195,9 +1202,21 @@ const StitchChat = () => {
     const [chatClient, setChatClient] = useState(null);
     const [videoClient, setVideoClient] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [streamReady, setStreamReady] = useState(false);
     const [translations, setTranslations] = useState({});
     const translatingRef = useRef(new Set());
     const isMobile = useIsMobile();
+
+    // Unified Stream Readiness effect
+    useEffect(() => {
+        // Only wait for chatClient to be ready, videoClient is secondary and slower
+        if (chatClient?.userID) {
+            console.log('[Stream] System ready for ID:', chatClient.userID);
+            setStreamReady(true);
+        } else {
+            setStreamReady(false);
+        }
+    }, [chatClient?.userID]);
 
     const clientRef = useRef(null);
     if (!clientRef.current) {
@@ -1277,6 +1296,14 @@ const StitchChat = () => {
             try {
                 const langCode = getLanguageCode(userLang);
                 console.log(`[Stream] Connecting user ${userId} with nativeLanguage: ${langCode}`);
+
+                // Validate token before passing to Stream SDK
+                if (!tokenString || typeof tokenString !== 'string') {
+                    console.error('[Stream] Invalid token, skipping connect:', tokenString);
+                    setLoading(false);
+                    return;
+                }
+
                 await client.connectUser(
                     {
                         id: userId,
@@ -1406,12 +1433,12 @@ const StitchChat = () => {
         }
     };
 
-    if (authLoading || loading || !chatClient) {
+    if (authLoading || loading || !chatClient || !streamReady) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-[#0A1A2F] text-slate-400">
                 <div className="text-center">
-                    <p className="loading loading-spinner text-primary mb-4"></p>
-                    <p className="text-sm font-medium">Instantiating workspace...</p>
+                    <div className="size-12 rounded-full border-t-2 border-primary animate-spin mx-auto mb-4"></div>
+                    <p className="text-sm font-medium">Conectando ao NativeTalk...</p>
                 </div>
             </div>
         );

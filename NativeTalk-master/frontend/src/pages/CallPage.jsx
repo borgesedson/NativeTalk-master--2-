@@ -150,8 +150,8 @@ const CallPage = () => {
         if (event.results[i].isFinal) finalTranscript += transcript;
         else setCurrentTranscript(transcript);
       }
-      if (finalTranscript.trim()) {
-        translateAndSend(finalTranscript.trim());
+      if (finalTranscript?.trim()) {
+        translateAndSend(finalTranscript?.trim());
         setCurrentTranscript('');
       }
     };

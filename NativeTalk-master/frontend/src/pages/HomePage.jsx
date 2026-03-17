@@ -67,6 +67,13 @@ const HomePage = () => {
             await streamClient.disconnectUser();
           }
 
+          // Validate token before passing to Stream SDK
+          if (!tokenData.token || typeof tokenData.token !== 'string') {
+            console.error('[Stream] Invalid token in HomePage:', tokenData.token);
+            setLoading(false);
+            return;
+          }
+
           await streamClient.connectUser(
             {
               id: authUser.id,

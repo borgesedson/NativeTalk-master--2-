@@ -658,12 +658,22 @@ export const getStreamToken = async () => {
     if (!response.ok) throw new Error('Failed to fetch stream token from server');
     
     const data = await response.json();
+    
+    // Validate token before returning
+    console.log('[Stream] Token response:', { hasToken: !!data?.token, tokenType: typeof data?.token });
+    
+    if (!data?.token || typeof data.token !== 'string') {
+      console.error('[Stream] Invalid token received from backend:', data);
+      throw new Error('Backend returned invalid Stream token');
+    }
+    
     return data;
   } catch (error) {
     console.error("Token fetch error:", error);
     throw new Error(error.message || "Erro ao obter token de chat");
   }
 };
+
 
 export const translateMessage = async (text, targetUserId, forcedTargetLang = null, forcedSourceLang = null) => {
   try {

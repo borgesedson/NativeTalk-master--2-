@@ -28,7 +28,7 @@ const TranslationPanel = () => {
   useState(() => {
     const handleSelection = () => {
       const selection = window.getSelection();
-      const text = selection?.toString().trim();
+      const text = selection?.toString()?.trim();
       
       if (text && text.length > 0) {
         setSelectedText(text);

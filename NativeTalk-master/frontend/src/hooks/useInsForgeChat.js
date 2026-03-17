@@ -93,7 +93,7 @@ export const useInsForgeChat = (receiverId) => {
 
     // 2. ENVIAR TEXTO
     const sendMessage = async (text, targetLang = 'en') => {
-        if (!user || !receiverId || !text.trim()) return;
+        if (!user || !receiverId || !text?.trim()) return;
 
         // UI Otimista: joga a msg na tela (sem ID oficial ainda)
         const tempMsg = {
