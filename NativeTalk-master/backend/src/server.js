@@ -33,11 +33,16 @@ const io = new Server(server, {
       }
       const allowedOrigins = [
         "https://nativetalk-thlm.onrender.com",
+        "http://82.25.64.9",
+        "https://82.25.64.9"
       ];
-      // Allow any Vercel subdomain and exact matches
-      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      // Allow any Vercel/Cloudflare subdomain and exact matches
+      const isVercel = /\.vercel\.app$/.test(origin);
+      const isCloudflare = /\.trycloudflare\.com$/.test(origin);
+      if (allowedOrigins.includes(origin) || isVercel || isCloudflare) {
         return callback(null, true);
       }
+      console.log('🚨 Socket CORS blocked:', origin);
       return callback(new Error('Origin not allowed by CORS'), false);
     },
     credentials: true,
@@ -76,6 +81,10 @@ const allowedOrigins = [
   "http://localhost:3001",
   "http://localhost:3002",
   "https://nativetalk-thlm.onrender.com",
+  "http://82.25.64.9",
+  "https://82.25.64.9",
+  /\.vercel\.app$/,
+  /\.trycloudflare\.com$/
 ];
 
 app.use(
@@ -83,13 +92,18 @@ app.use(
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      const allowed = allowedOrigins.some(o =>
+        typeof o === 'string' ? o === origin : o.test(origin)
+      );
+
+      if (allowed) {
         callback(null, true);
       } else {
         if (process.env.NODE_ENV !== "production") {
           console.warn(`⚠️ CORS: Permitindo origin em dev: ${origin}`);
           return callback(null, true);
         }
+        console.log('🚨 CORS blocked:', origin);
         callback(new Error(`CORS: Origin '${origin}' não permitida`), false);
       }
     },
