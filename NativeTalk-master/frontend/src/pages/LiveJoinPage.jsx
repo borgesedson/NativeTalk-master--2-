@@ -59,7 +59,8 @@ const LiveJoinPage = () => {
 
     const fetchSession = async () => {
         try {
-            const res = await fetch(`/api/live/${code}`);
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const res = await fetch(`${API_BASE_URL}/live/${code}`);
             const data = await res.json();
             if (data.error) {
                 toast.error('Sessão não encontrada');
@@ -77,7 +78,8 @@ const LiveJoinPage = () => {
         setIsJoining(true);
         try {
             // 1. Join in DB
-            const joinRes = await fetch(`/api/live/${code}/join`, {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const joinRes = await fetch(`${API_BASE_URL}/live/${code}/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -90,7 +92,7 @@ const LiveJoinPage = () => {
 
             // 2. Initialise Guest Stream Session
             const client = StreamChat.getInstance(STREAM_API_KEY);
-            const tokenRes = await fetch(`/api/live/${code}/stream-token`, {
+            const tokenRes = await fetch(`${API_BASE_URL}/live/${code}/stream-token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ guest_name: guestName || 'Convidado' })
@@ -176,7 +178,7 @@ const LiveJoinPage = () => {
             const uploadResult = await uploadAudio(blob, 'audio/wav');
             const audioUrl = uploadResult?.url || uploadResult;
 
-            const res = await fetch('/api/stt', {
+            const res = await fetch(`${API_BASE_URL}/stt`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

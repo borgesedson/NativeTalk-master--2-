@@ -927,7 +927,8 @@ const CustomMessageInputUI = () => {
             console.log('[Audio] from: auto (Whisper detect) | to:', toLang);
             console.log('[Audio] contactUser:', otherMember?.native_language);
 
-            const response = await fetch('/api/stt', {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const response = await fetch(`${API_BASE_URL}/stt`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1231,7 +1232,8 @@ const StitchChat = () => {
 
         translatingRef.current.add(cacheKey);
         try {
-            const response = await fetch('/api/translate', {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const response = await fetch(`${API_BASE_URL}/translate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: message.text, from: senderLang, to: readerLang })

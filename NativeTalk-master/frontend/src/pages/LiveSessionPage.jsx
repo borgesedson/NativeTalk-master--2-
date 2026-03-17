@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { StreamChat } from 'stream-chat';
 import useAuthUser from '../hooks/useAuthUser';
 import toast from 'react-hot-toast';
-import { uploadAudio } from '../lib/api';
+import { uploadAudio, getStreamToken } from '../lib/api';
 import { LANGUAGES } from '../constants';
 import Logo from '../components/Logo';
 import { getLanguageCode } from '../lib/utils';
@@ -73,7 +73,8 @@ const LiveSessionPage = () => {
         const poll = async () => {
             if (cancelled || guestJoinedRef.current) return;
             try {
-                const res = await fetch(`/api/live/${session.session_code}`);
+                const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+                const res = await fetch(`${API_BASE_URL}/live/${session.session_code}`);
                 if (res.ok) {
                     const data = await res.json();
                     console.log('[Polling]', data.status, data.language_2, data.guest_name);
@@ -96,7 +97,8 @@ const LiveSessionPage = () => {
     const handleCreateSession = async () => {
         setIsCreating(true);
         try {
-            const res = await fetch('/api/live/create', {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const res = await fetch(`${API_BASE_URL}/live/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -122,13 +124,7 @@ const LiveSessionPage = () => {
     const initStream = async (code) => {
         try {
             const client = StreamChat.getInstance(STREAM_API_KEY);
-            // Get token from backend
-            const tokenRes = await fetch('/api/chat/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.id })
-            });
-            const { token } = await tokenRes.json();
+            const token = await getStreamToken();
             
             if (client.userID) {
                 await client.disconnectUser();
@@ -218,7 +214,8 @@ const LiveSessionPage = () => {
             const uploadResult = await uploadAudio(blob, 'audio/wav');
             const audioUrl = uploadResult?.url || uploadResult;
 
-            const res = await fetch('/api/stt', {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const res = await fetch(`${API_BASE_URL}/stt`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

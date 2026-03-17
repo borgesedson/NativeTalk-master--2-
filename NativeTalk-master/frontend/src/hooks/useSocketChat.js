@@ -139,7 +139,8 @@ export const useSocketChat = (receiverId) => {
                 // I will use a direct axios call here to be safe and match controller expectation of JSON.
 
                 // Direct call matching controller expectation:
-                const response = await fetch(`${SOCKET_URL}/api/transcription/transcribe`, {
+                const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+                const response = await fetch(`${API_BASE_URL}/transcription/transcribe`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

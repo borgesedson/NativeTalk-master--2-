@@ -54,7 +54,8 @@ const VideoCallContent = ({ call, contact, currentUser, onEnd }) => {
             setOriginalText(transcript);
 
             try {
-                const res = await fetch('/api/translate', {
+                const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+                const res = await fetch(`${API_BASE_URL}/translate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
