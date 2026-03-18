@@ -899,6 +899,7 @@ const UserProfileModal = ({ user, isOpen, onClose }) => {
 
 const CustomMessageInputUI = () => {
     const { text, setText } = useMessageInputContext();
+    const [localText, setLocalText] = useState(text || '');
     const { channel } = useChatContext();
     const { authUser } = useAuthUser();
     const fileInputRef = useRef(null);
@@ -986,7 +987,7 @@ const CustomMessageInputUI = () => {
             toast.loading('Enviando arquivo...', { id: 'file-upload' });
             const response = await channel.sendFile(file, file.name, file.type);
             await channel.sendMessage({
-                text: text || 'Anexo',
+                text: localText || 'Anexo',
                 originalLanguage: authUser?.native_language || 'pt',
                 attachments: [{
                     type: file.type.startsWith('image/') ? 'image' : 'file',
@@ -997,6 +998,7 @@ const CustomMessageInputUI = () => {
                 }]
             });
             setText('');
+            setLocalText('');
             toast.success('Arquivo enviado!', { id: 'file-upload' });
         } catch (error) {
             console.error(error);
@@ -1006,12 +1008,13 @@ const CustomMessageInputUI = () => {
 
     const onSubmit = (e) => {
         e.preventDefault();
-        if (!text?.trim()) return;
+        if (!localText?.trim()) return;
         channel.sendMessage({
-            text,
+            text: localText,
             originalLanguage: authUser?.native_language || 'pt'
         });
         setText('');
+        setLocalText('');
     };
 
     const handleKeyDown = (e) => {
@@ -1031,8 +1034,11 @@ const CustomMessageInputUI = () => {
             </button>
             <div className="flex-1 flex items-center py-2 px-2 bg-transparent">
                 <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    value={localText}
+                    onChange={(e) => {
+                        setLocalText(e.target.value);
+                        setText(e.target.value);
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder="Digite sua mensagem"
                     className="w-full bg-transparent text-[16px] text-white placeholder-slate-500 focus:outline-none resize-none max-h-[120px] overflow-y-auto"
@@ -1040,7 +1046,7 @@ const CustomMessageInputUI = () => {
                 />
             </div>
             <div className="shrink-0 mb-[4px] ml-2 flex items-center justify-center">
-                {(text?.trim()?.length || 0) > 0 ? (
+                {(localText?.trim()?.length || 0) > 0 ? (
                     <button
                         onClick={onSubmit}
                         className="flex items-center justify-center size-12 rounded-full bg-[#0D7377] text-white hover:bg-[#0a5a5e] transition-all organic-press cursor-pointer shadow-lg"

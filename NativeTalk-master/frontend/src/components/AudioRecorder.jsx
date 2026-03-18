@@ -48,6 +48,12 @@ const AudioRecorder = ({ onSendAudio, disabled }) => {
 
   const startRecording = async () => {
     if (disabled) return;
+    
+    if (!navigator.mediaDevices || !window.isSecureContext) {
+      toast.error('Gravação de áudio requer conexão segura HTTPS.');
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {

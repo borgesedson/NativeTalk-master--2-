@@ -818,7 +818,7 @@ export const uploadAudio = async (blob, mimeType = 'audio/webm;codecs=opus') => 
     throw new Error('Session expired');
   }
 
-  const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+  const ext = mimeType.includes('wav') ? 'wav' : (mimeType.includes('ogg') ? 'ogg' : 'webm');
   const filename = `audio_${Date.now()}.${ext}`;
 
   const { data, error } = await insforge.storage
