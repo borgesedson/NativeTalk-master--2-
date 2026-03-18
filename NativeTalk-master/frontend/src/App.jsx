@@ -113,9 +113,9 @@ const App = () => {
               <Route path="/home" element={<Navigate to="/dashboard" replace />} />
 
               <Route path="/messages" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
-              <Route path="/chat/:channelId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+              <Route path="/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
               <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
-              <Route path="/groups/:channelId" element={<ProtectedRoute><GroupChatPage /></ProtectedRoute>} />
+              <Route path="/groups/:id" element={<ProtectedRoute><GroupChatPage /></ProtectedRoute>} />
 
               <Route path="/interpreter" element={<ProtectedRoute><InterpreterPage /></ProtectedRoute>} />
               <Route path="/live" element={<ProtectedRoute><LiveSessionPage /></ProtectedRoute>} />

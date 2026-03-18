@@ -28,7 +28,8 @@ import "stream-chat-react/dist/css/v2/index.css";
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
 const ChatPage = () => {
-  const { id: targetUserId } = useParams();
+  const { id } = useParams();
+  const targetUserId = id?.trim();
   const navigate = useNavigate();
 
   const [chatClient, setChatClient] = useState(null);
@@ -87,8 +88,8 @@ const ChatPage = () => {
           tokenData.token
         );
 
-        const channelId = [authUser.id.replace(/-/g, ''), targetUserId.replace(/-/g, '')].sort().join("");
-        const currChannel = client.channel("messaging", channelId, {
+        // Resolve channel by members (Stream handles finding/creating)
+        const currChannel = client.channel("messaging", {
           members: [authUser.id, targetUserId],
         });
 

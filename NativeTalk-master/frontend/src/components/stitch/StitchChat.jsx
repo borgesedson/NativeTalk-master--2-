@@ -179,6 +179,8 @@ const OnlineUsersRow = () => {
     const { client } = useChatContext();
     const currentUser = client.user;
     const [onlineUsers, setOnlineUsers] = useState([]);
+    const isMobile = useIsMobile();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!currentUser?.id) return;
@@ -204,10 +206,23 @@ const OnlineUsersRow = () => {
 
     if (onlineUsers.length === 0) return null; // "No online users: Hide the online users row entirely"
 
+    const handleUserClick = (u) => {
+        if (isMobile) {
+            navigate(`/chat/${u.id}`);
+        } else {
+            // Desktop logic if needed, or just let them start a chat
+            window.dispatchEvent(new CustomEvent('open-new-chat', { detail: { userId: u.id } }));
+        }
+    };
+
     return (
         <div className="flex overflow-x-auto hide-scrollbar px-6 pb-4 gap-4 border-b border-white/5 mb-4 pt-2">
             {onlineUsers.map((u) => (
-                <div key={u.id} className="flex flex-col items-center gap-1.5 cursor-pointer shrink-0">
+                <div 
+                    key={u.id} 
+                    onClick={() => handleUserClick(u)}
+                    className="flex flex-col items-center gap-1.5 cursor-pointer shrink-0"
+                >
                     <div className="relative">
                         <div className="size-11 rounded-full bg-cover bg-center shadow-md bg-slate-800" style={{ backgroundImage: `url('${u.image || "https://ui-avatars.com/api/?name=" + u.name}')` }}></div>
                         <div className="absolute bottom-0 right-0 size-3 rounded-full bg-success border-2 border-[#0D2137]"></div>
@@ -224,9 +239,11 @@ const CustomConversationRow = (props) => {
     const { client } = useChatContext();
     const currentUser = client.user;
 
-    // Fallback if members data is somehow empty
-    const otherMember = Object.values(channel.state.members || {}).find(m => m.user.id !== currentUser?.id);
+    // Robust other member extraction
+    const members = Object.values(channel.state?.members || {});
+    const otherMember = members.find(m => m.user?.id !== currentUser?.id) || members[0];
     const otherUser = otherMember?.user;
+    const otherUserId = otherUser?.id || channel.id.replace('messaging:', '').replace(currentUser?.id, '').replace('-', '');
 
     const unseenCount = channel.countUnread();
     const messages = channel.state.messages || [];
@@ -250,8 +267,10 @@ const CustomConversationRow = (props) => {
     return (
         <div
             onClick={() => {
-                if (isMobile) {
-                    navigate(`/chat/${channel.id}`);
+                const targetId = otherUser?.id || otherUserId;
+                console.log('[Navigation] Mobile click, target:', targetId, 'isMobile:', isMobile);
+                if (isMobile && targetId) {
+                    navigate(`/chat/${targetId}`);
                 } else {
                     setActiveChannel(channel);
                 }
@@ -284,6 +303,8 @@ const NewChatModal = ({ isOpen, onClose }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
+    const isMobile = useIsMobile();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!isOpen) {
@@ -318,15 +339,24 @@ const NewChatModal = ({ isOpen, onClose }) => {
     }, [searchQuery, isOpen, client]);
 
     const handleStartChat = async (selectedUser) => {
+        const toastId = toast.loading('Iniciando conversa...');
         try {
             const channel = client.channel('messaging', {
                 members: [client.user.id, selectedUser.id],
             });
             await channel.watch();
-            setActiveChannel(channel);
+            
+            if (isMobile) {
+                toast.success('Abrindo chat...', { id: toastId });
+                navigate(`/chat/${selectedUser.id}`);
+            } else {
+                toast.dismiss(toastId);
+                setActiveChannel(channel);
+            }
             onClose();
         } catch (e) {
             console.error('Error starting chat', e);
+            toast.error('Erro ao iniciar conversa', { id: toastId });
         }
     };
 
@@ -397,7 +427,12 @@ const ContactsSidebarContent = () => {
     }), [userId]);
 
     const sort = useMemo(() => ({ last_message_at: -1 }), []);
-    const options = useMemo(() => ({ limit: 20 }), []);
+    const options = useMemo(() => ({ 
+        limit: 20,
+        watch: true,
+        state: true,
+        presence: true
+    }), []);
 
     // Debug Logs
     useEffect(() => {
@@ -1193,7 +1228,10 @@ const MainChatAreaContent = ({ translations, onTranslate, onStartVoiceCall, onSt
     );
 };
 
-// Main Export Component
+if (!STREAM_API_KEY) {
+    console.error('[Stream] CRITICAL: VITE_STREAM_API_KEY is missing from environment variables!');
+}
+
 const StitchChat = () => {
     const { authUser: user, isLoading: authLoading } = useAuthUser();
     const [chatClient, setChatClient] = useState(null);
