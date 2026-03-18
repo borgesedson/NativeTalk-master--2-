@@ -34,7 +34,9 @@ const io = new Server(server, {
       const allowedOrigins = [
         "https://nativetalk-thlm.onrender.com",
         "http://82.25.64.9",
-        "https://82.25.64.9"
+        "https://82.25.64.9",
+        "http://82.25.64.9:80",
+        "https://82.25.64.9:443"
       ];
       // Allow any Vercel/Cloudflare subdomain and exact matches
       const isVercel = /\.vercel\.app$/.test(origin);
@@ -83,6 +85,8 @@ const allowedOrigins = [
   "https://nativetalk-thlm.onrender.com",
   "http://82.25.64.9",
   "https://82.25.64.9",
+  "http://82.25.64.9:80",
+  "https://82.25.64.9:443",
   /\.vercel\.app$/,
   /\.trycloudflare\.com$/
 ];
@@ -353,7 +357,7 @@ app.use("/api/transcription", transcriptionRoutes);
 app.use("/api/audio", audioRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/live", liveRoutes);
-const frontendPath = path.join(__dirname, "../../frontend_new/out"); // Assuming static export or similar
+const frontendPath = path.join(__dirname, "../../frontend/dist"); // ✅ Path corrected for current structure
 
 if (fs.existsSync(frontendPath)) {
   console.log("✅ Frontend dist found, serving static files");
