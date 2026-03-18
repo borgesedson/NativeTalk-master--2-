@@ -37,6 +37,7 @@ const ChatPage = () => {
   const [loading, setLoading] = useState(true);
   const [streamReady, setStreamReady] = useState(false);
   const [translations, setTranslations] = useState({});
+  const [error, setError] = useState(null);
   const translatingRef = useRef(new Set());
   const initRef = useRef(false);
 
@@ -208,17 +209,22 @@ const ChatPage = () => {
           try { client.disconnectUser(); } catch { }
           initRef.current = false;
         };
-      } catch (error) {
-        console.error("Error initializing chat:", error);
-        toast.error("Não foi possível conectar ao chat.");
+      } catch (e) {
+        console.error('[Stream] initChat error:', e);
+        setError(`Falha ao conectar ao chat: ${e.message || 'Erro desconhecido'}`);
       } finally {
         setLoading(false);
       }
     }
 
-    initChat();
+    if (targetUserId) {
+        initChat();
+    } else {
+        setError("ID do usuário alvo não fornecido na URL.");
+        setLoading(false);
+    }
     return () => { if (cleanupFn) cleanupFn(); };
-  }, [tokenData, authUser, targetUserId]);
+  }, [tokenData?.token, authUser, targetUserId]);
 
   const handleVideoCall = () => { if (channel) navigate(`/call/${channel.id}`); };
 
@@ -274,21 +280,21 @@ const ChatPage = () => {
     }
   };
 
-  // 4. Show skeleton while loading
-  if (loading || !chatClient || !channel || !streamReady) return (
-    <div className="flex flex-col h-[100dvh] w-full bg-[#0D2137]">
-      <div className="h-[60px] md:h-[88px] shrink-0 border-b border-white/5 bg-transparent pt-[env(safe-area-inset-top)]"></div>
-      <div className="p-4 flex flex-col gap-3 flex-1 overflow-hidden opacity-50">
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className={`flex gap-3 animate-pulse ${i % 2 === 0 ? 'flex-row-reverse' : ''}`}>
-            <div className="size-10 rounded-full bg-white/5 shrink-0"></div>
-            <div className={`h-16 bg-white/5 rounded-2xl w-[60%] ${i % 2 === 0 ? 'rounded-tr-sm' : 'rounded-tl-sm'}`}></div>
-          </div>
-        ))}
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[#0D2137] text-white p-6 text-center">
+        <span className="material-symbols-outlined text-[64px] text-red-500 mb-4">error</span>
+        <h2 className="text-xl font-bold mb-2">Ops! Algo deu errado</h2>
+        <p className="text-slate-400 mb-6 max-w-xs">{error}</p>
+        <div className="flex gap-4">
+            <button onClick={() => navigate(-1)} className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/5 transition-colors">Voltar</button>
+            <button onClick={() => window.location.reload()} className="px-6 py-2 rounded-full bg-primary hover:bg-primary-focus font-bold">Tentar Novamente</button>
+        </div>
       </div>
-      <div className="h-[80px] shrink-0 border-t border-white/5 bg-transparent pb-[env(safe-area-inset-bottom)]"></div>
-    </div>
-  );
+    );
+  }
+
+  if (loading || !chatClient || !channel) return <ChatLoader />;
 
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-[#0D2137]">

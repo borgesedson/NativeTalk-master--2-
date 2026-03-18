@@ -281,16 +281,29 @@ const CustomConversationRow = (props) => {
                 <div className="size-12 rounded-full bg-cover bg-center shrink-0" style={{ backgroundImage: `url('${imgUrl}')` }}></div>
                 {isOnline && <div className="absolute bottom-0 right-0 size-3 border-2 border-[#0D2137] rounded-full bg-success"></div>}
             </div>
-            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                <div className="flex justify-between items-center mb-0.5">
-                    <h3 className={`font-bold ${isMobile ? 'text-[16px]' : 'text-[14px]'} truncate text-white`}>{name} <span className="text-[12px]">{langCode}</span></h3>
-                    <span className="text-[12px] font-medium text-slate-500">{time}</span>
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline mb-0.5">
+                    <span className="font-semibold text-[15px] truncate text-white">{name}</span>
+                    <span className="text-[11px] text-slate-400 font-medium">{time}</span>
                 </div>
-                <div className="flex justify-between items-center gap-2">
-                    <p className={`${isMobile ? 'text-[14px]' : 'text-[13px]'} text-slate-400 truncate italic`}>
-                        {isOtherUserTyping ? "Digitando..." : `"${lastMsgText}"`}
+                <div className="flex justify-between items-center">
+                    <p className="text-[13px] text-slate-400 truncate pr-2 flex-1">
+                        {isOtherUserTyping ? (
+                            <span className="text-success italic animate-pulse">Digitando...</span>
+                        ) : (
+                            lastMsgText || "Comece a conversar"
+                        )}
                     </p>
-                    {unseenCount > 0 && <span className="size-5 rounded-full bg-accent text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-md">{unseenCount}</span>}
+                    {unseenCount > 0 && (
+                        <span className="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg">
+                            {unseenCount}
+                        </span>
+                    )}
+                    {isMobile && (
+                        <span className="material-symbols-outlined text-slate-500 text-[20px] ml-1 opacity-50">
+                            chevron_right
+                        </span>
+                    )}
                 </div>
             </div>
         </div>
@@ -301,7 +314,7 @@ const NewChatModal = ({ isOpen, onClose }) => {
     const { client, setActiveChannel } = useChatContext();
     const currentUser = client.user;
     const [searchQuery, setSearchQuery] = useState('');
-    const [users, setUsers] = useState([]);
+    const [users, setLoadingUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const isMobile = useIsMobile();
     const navigate = useNavigate();
@@ -309,7 +322,7 @@ const NewChatModal = ({ isOpen, onClose }) => {
     useEffect(() => {
         if (!isOpen) {
             setSearchQuery('');
-            setUsers([]);
+            setLoadingUsers([]);
             return;
         }
         const delayDebounceFn = setTimeout(async () => {
@@ -324,14 +337,14 @@ const NewChatModal = ({ isOpen, onClose }) => {
                             name: u.name || 'Sem nome',
                             image: u.avatar_url || `https://ui-avatars.com/api/?name=${u.name}`
                         }));
-                    setUsers(mappedUsers.slice(0, 8));
+                    setLoadingUsers(mappedUsers.slice(0, 8));
                 } catch (e) {
                     console.error('Error searching users', e);
                 } finally {
                     setLoading(false);
                 }
             } else {
-                setUsers([]);
+                setLoadingUsers([]);
             }
         }, 500);
 
@@ -512,6 +525,18 @@ const ContactsSidebarContent = () => {
                 </div>
             )}
 
+            {/* Floating Action Button (Mobile Only) */}
+            {isMobile && !channelSearch && (
+                <button
+                    onClick={() => setIsNewChatOpen(true)}
+                    className="fixed right-6 bottom-24 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center z-[100] active:scale-90 transition-all hover:bg-primary-focus group"
+                    aria-label="Nova Conversa"
+                >
+                    <span className="material-symbols-outlined text-[28px] group-hover:rotate-12 transition-transform">add_comment</span>
+                    <div className="absolute -top-1 -right-1 size-3 bg-accent rounded-full border-2 border-[#0D2137]"></div>
+                </button>
+            )}
+
             <div
                 className="flex-1 overflow-y-auto hide-scrollbar px-2 md:px-4 pb-6 min-h-[300px]"
                 style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto' }}
@@ -529,15 +554,21 @@ const ContactsSidebarContent = () => {
                         Preview={CustomConversationRow}
                         channelRenderFilterFn={channelRenderFilterFn}
                         EmptyStateIndicator={() => (
-                            <div className="text-center text-slate-400 mt-10 p-6 bg-white/5 rounded-xl border border-dashed border-white/10">
-                                <p className="mb-4 text-[13px] font-medium">
-                                    {channelSearch ? "Nenhuma conversa encontrada" : "Nenhuma conversa ainda"}
+                            <div className="text-center text-slate-400 mt-16 p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <div className="bg-white/5 size-20 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-inner">
+                                    <span className="material-symbols-outlined text-[40px] opacity-40">chat_bubble</span>
+                                </div>
+                                <h3 className="text-white text-lg font-semibold mb-2">Suas conversas</h3>
+                                <p className="mb-8 text-[14px] max-w-[200px] mx-auto text-slate-400 leading-relaxed font-normal">
+                                    {channelSearch ? "Nenhuma conversa encontrada." : "Suas conversas recentes aparecerão aqui."}
                                 </p>
-                                {!channelSearch && (
-                                    <button onClick={() => window.dispatchEvent(new CustomEvent('open-new-chat'))} className="text-primary hover:text-white transition-colors text-[13px] font-bold flex items-center justify-center gap-1 mx-auto bg-white/5 px-4 py-2 rounded-full">
-                                        Encontre alguém para conversar <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                                    </button>
-                                )}
+                                <button 
+                                    onClick={() => setIsNewChatOpen(true)}
+                                    className="bg-primary hover:bg-primary-focus text-white px-8 py-3 rounded-full text-[14px] font-bold shadow-xl active:scale-95 transition-all flex items-center gap-2 mx-auto"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">search</span>
+                                    Encontrar Pessoas
+                                </button>
                             </div>
                         )}
                         LoadingErrorIndicator={() => <div className="p-4 text-red-500 font-bold bg-red-500/10 rounded-lg border border-red-500/20 text-center m-4">Sem conexão com o chat! Verifique sua rede.</div>}
