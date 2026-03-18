@@ -13,6 +13,8 @@ import { LANGUAGES } from '../../constants';
 import DesktopChatLayout from '../layout/DesktopChatLayout';
 import MobileChatLayout from '../layout/MobileChatLayout';
 import useIsMobile from '../../hooks/useIsMobile';
+const BUILD_ID = 'v2.1-mobile-fix-verified';
+console.log('🚀 NativeTalk Build Active:', BUILD_ID);
 import { getAvatarUrl, getLanguageCode } from '../../lib/utils';
 import AudioRecorder from '../AudioRecorder';
 import CallingScreen from '../calls/CallingScreen';
@@ -536,6 +538,11 @@ const ContactsSidebarContent = () => {
                     <div className="absolute -top-1 -right-1 size-3 bg-accent rounded-full border-2 border-[#0D2137]"></div>
                 </button>
             )}
+
+            {/* Version & Debug Info (Visible to help troubleshooting) */}
+            <div className="fixed left-4 bottom-4 z-50 pointer-events-none opacity-30 text-[10px] text-white bg-black/50 px-2 py-1 rounded-md border border-white/5">
+                {BUILD_ID} | {isMobile ? 'MOBILE' : 'DESKTOP'} | {window.innerWidth}px
+            </div>
 
             <div
                 className="flex-1 overflow-y-auto hide-scrollbar px-2 md:px-4 pb-6 min-h-[300px]"
