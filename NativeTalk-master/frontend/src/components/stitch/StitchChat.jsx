@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { StreamChat } from 'stream-chat';
-import { Chat, ChannelList, Channel, Window, MessageList, MessageInput, useChatContext, useMessageContext, useTypingContext, useMessageInputContext } from 'stream-chat-react';
+import { Chat, ChannelList, Channel, Window, MessageList, MessageInput, useChatContext, useMessageContext, useTypingContext, useMessageInputContext, useChannelActionContext } from 'stream-chat-react';
 import { StreamVideoClient, StreamVideo } from '@stream-io/video-react-sdk';
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 import { useNavigate } from 'react-router';
@@ -897,32 +897,50 @@ const UserProfileModal = ({ user, isOpen, onClose }) => {
     );
 };
 
-const CustomMessageInputUI = () => {
-    const { text, setText } = useMessageInputContext();
-    const [localText, setLocalText] = useState(text || '');
+const ChatInput = () => {
+    const [text, setText] = useState('');
+    const { sendMessage } = useChannelActionContext();
     const { channel } = useChatContext();
     const { authUser } = useAuthUser();
     const fileInputRef = useRef(null);
     const [isProcessingAudio, setIsProcessingAudio] = useState(false);
+
+    const handleSend = async () => {
+        if (!text.trim() || !channel) return;
+        const messageText = text;
+        setText(''); // Clear immediately for UX
+        try {
+            console.log('[ChatInput] Sending message to channel:', channel.id);
+            await channel.sendMessage({ 
+                text: messageText,
+                originalLanguage: authUser?.native_language || 'pt'
+            });
+        } catch (err) {
+            console.error("[ChatInput] Failed to send message:", err);
+            toast.error("Erro ao enviar mensagem");
+            setText(messageText); // Restore on failure
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
 
     const handleSendAudio = async (audioBlob, _, duration) => {
         if (!channel) return;
         setIsProcessingAudio(true);
         const toastId = toast.loading('🎤 Processando áudio...', { id: 'audio-flow' });
         try {
-            // 1. Preprocess audio for whisper
             const processedBlob = await preprocessAudio(audioBlob);
-
-            // 2. Upload to Storage
             toast.loading('☁️ Enviando áudio...', { id: toastId });
             const uploadResult = await uploadAudio(processedBlob, 'audio/wav');
             const audioUrl = uploadResult?.url || uploadResult;
             if (!audioUrl) throw new Error("Erro ao fazer upload do áudio");
 
-            // 3. STT + Translation via Backend (synchronous — waits for Whisper)
             toast.loading('🌐 Transcrevendo e traduzindo...', { id: toastId });
-
-            // Resolve receiver's language for translation target
             const otherMemberId = Object.keys(channel.state.members).find(id => id !== authUser.id);
             const otherMember = channel.state.members[otherMemberId]?.user;
             const toLang = getLanguageCode(
@@ -931,9 +949,6 @@ const CustomMessageInputUI = () => {
                 otherMember?.language ||
                 'en'
             );
-
-            console.log('[Audio] from: auto (Whisper detect) | to:', toLang);
-            console.log('[Audio] contactUser:', otherMember?.native_language);
 
             const API_BASE_URL = import.meta.env.VITE_API_URL || '';
             const response = await fetch(`${API_BASE_URL}/stt`, {
@@ -954,7 +969,6 @@ const CustomMessageInputUI = () => {
             const detectedLang = result?.detected_language || authUser?.native_language || 'en';
             if (!transcript) throw new Error("Não foi possível processar o áudio");
 
-            // 4. Send message with final transcript + translation
             await channel.sendMessage({
                 text: transcript,
                 originalLanguage: detectedLang,
@@ -971,7 +985,6 @@ const CustomMessageInputUI = () => {
             });
 
             toast.success('✅ Enviado!', { id: toastId });
-            console.log('[Audio] Message sent with transcript:', transcript.substring(0, 50));
         } catch (error) {
             console.error('[Audio] Error:', error);
             toast.error(error.message || 'Erro ao processar áudio', { id: toastId });
@@ -987,7 +1000,7 @@ const CustomMessageInputUI = () => {
             toast.loading('Enviando arquivo...', { id: 'file-upload' });
             const response = await channel.sendFile(file, file.name, file.type);
             await channel.sendMessage({
-                text: localText || 'Anexo',
+                text: text || 'Anexo',
                 originalLanguage: authUser?.native_language || 'pt',
                 attachments: [{
                     type: file.type.startsWith('image/') ? 'image' : 'file',
@@ -998,29 +1011,10 @@ const CustomMessageInputUI = () => {
                 }]
             });
             setText('');
-            setLocalText('');
             toast.success('Arquivo enviado!', { id: 'file-upload' });
         } catch (error) {
             console.error(error);
             toast.error('Erro ao enviar arquivo', { id: 'file-upload' });
-        }
-    };
-
-    const onSubmit = (e) => {
-        e.preventDefault();
-        if (!localText?.trim()) return;
-        channel.sendMessage({
-            text: localText,
-            originalLanguage: authUser?.native_language || 'pt'
-        });
-        setText('');
-        setLocalText('');
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            onSubmit(e);
         }
     };
 
@@ -1034,11 +1028,8 @@ const CustomMessageInputUI = () => {
             </button>
             <div className="flex-1 flex items-center py-2 px-2 bg-transparent">
                 <textarea
-                    value={localText}
-                    onChange={(e) => {
-                        setLocalText(e.target.value);
-                        setText(e.target.value);
-                    }}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Digite sua mensagem"
                     className="w-full bg-transparent text-[16px] text-white placeholder-slate-500 focus:outline-none resize-none max-h-[120px] overflow-y-auto"
@@ -1046,9 +1037,9 @@ const CustomMessageInputUI = () => {
                 />
             </div>
             <div className="shrink-0 mb-[4px] ml-2 flex items-center justify-center">
-                {(localText?.trim()?.length || 0) > 0 ? (
+                {text.trim().length > 0 ? (
                     <button
-                        onClick={onSubmit}
+                        onClick={handleSend}
                         className="flex items-center justify-center size-12 rounded-full bg-[#0D7377] text-white hover:bg-[#0a5a5e] transition-all organic-press cursor-pointer shadow-lg"
                         style={{ boxShadow: '0 4px 14px -2px rgba(13, 115, 119, 0.4)' }}
                     >
@@ -1107,7 +1098,7 @@ const MainChatAreaContent = ({ translations, onTranslate, onStartVoiceCall, onSt
             </div>
 
             <div className="px-8 pb-8 pt-2 relative z-20">
-                <MessageInput Input={CustomMessageInputUI} />
+                <ChatInput />
             </div>
 
             <style dangerouslySetInnerHTML={{

@@ -53,9 +53,9 @@ const ChatPage = () => {
   const { authUser } = useAuthUser();
 
   const { data: tokenData } = useQuery({
-    queryKey: ["streamToken", user?.id],
+    queryKey: ["streamToken", authUser?.id],
     queryFn: getStreamToken,
-    enabled: !!authUser,
+    enabled: !!authUser?.id,
     staleTime: 20 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
