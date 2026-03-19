@@ -13,7 +13,7 @@ import { LANGUAGES } from '../../constants';
 import DesktopChatLayout from '../layout/DesktopChatLayout';
 import MobileChatLayout from '../layout/MobileChatLayout';
 import useIsMobile from '../../hooks/useIsMobile';
-const BUILD_ID = 'v2.1-mobile-fix-verified';
+const BUILD_ID = 'v2.5.1-FINAL'; // Final mobile fix release
 console.log('🚀 NativeTalk Build Active:', BUILD_ID);
 import { getAvatarUrl, getLanguageCode } from '../../lib/utils';
 import AudioRecorder from '../AudioRecorder';
