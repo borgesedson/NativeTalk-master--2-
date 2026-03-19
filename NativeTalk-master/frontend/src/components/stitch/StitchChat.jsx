@@ -13,7 +13,7 @@ import { LANGUAGES } from '../../constants';
 import DesktopChatLayout from '../layout/DesktopChatLayout';
 import MobileChatLayout from '../layout/MobileChatLayout';
 import useIsMobile from '../../hooks/useIsMobile';
-const BUILD_ID = 'v2.5.1-FINAL'; // Final mobile fix release
+const BUILD_ID = 'v2.5.2-FINAL'; // Mobile Sidebar UI fix
 console.log('🚀 NativeTalk Build Active:', BUILD_ID);
 import { getAvatarUrl, getLanguageCode } from '../../lib/utils';
 import AudioRecorder from '../AudioRecorder';
@@ -120,32 +120,32 @@ const NavigationSidebar = () => {
 
     return (
         <div className="flex flex-col h-full items-center justify-between w-full">
-            <div className="flex flex-col items-center gap-8 w-full mt-2">
+            <div className={`flex flex-col items-center ${isMobile ? 'gap-4' : 'gap-8'} w-full mt-2`}>
                 <div onClick={() => navigate('/dashboard')} className="cursor-pointer hover:scale-105 transition-transform active:scale-95">
-                    <Logo size={48} className="!bg-transparent !border-none !shadow-none" />
+                    <Logo size={isMobile ? 38 : 48} className="!bg-transparent !border-none !shadow-none" />
                 </div>
-                <nav className="flex flex-col gap-6 w-full items-center text-slate-400">
+                <nav className={`flex flex-col ${isMobile ? 'gap-4' : 'gap-6'} w-full items-center text-slate-400`}>
                     <button onClick={() => navigate('/dashboard')} className={`relative flex items-center justify-center p-3 rounded-xl transition-all organic-press ${location.pathname === '/dashboard' || location.pathname === '/' ? 'bg-[#0D7377] text-white shadow-lg' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
                         {(location.pathname === '/dashboard' || location.pathname === '/') && <div className="absolute left-[-16px] top-1/2 -translate-y-1/2 w-1 h-8 bg-[#0D7377] rounded-r-full"></div>}
-                        <span className="material-symbols-outlined text-[26px]">chat</span>
+                        <span className="material-symbols-outlined text-[24px]">chat</span>
                     </button>
                     <button onClick={() => navigate('/contacts')} className={`relative flex items-center justify-center p-3 rounded-xl transition-all organic-press ${location.pathname === '/contacts' ? 'bg-[#0D7377] text-white shadow-lg' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
-                        <span className="material-symbols-outlined text-[26px]">group</span>
+                        <span className="material-symbols-outlined text-[24px]">group</span>
                     </button>
                     <button onClick={() => navigate('/live')} className={`relative flex items-center justify-center p-3 rounded-xl transition-all organic-press ${location.pathname.startsWith('/live') ? 'bg-[#0D7377] text-white shadow-lg' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`} title="Sessão ao Vivo">
-                        <span className="material-symbols-outlined text-[26px]">cell_tower</span>
+                        <span className="material-symbols-outlined text-[24px]">cell_tower</span>
                     </button>
                     <button onClick={() => navigate('/favorites')} className="flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group">
-                        <span className="material-symbols-outlined text-[26px]">star</span>
+                        <span className="material-symbols-outlined text-[24px]">star</span>
                     </button>
 
                     <button onClick={() => navigate('/notifications')} className="relative flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group">
-                        <span className="material-symbols-outlined text-[26px]">notifications</span>
+                        <span className="material-symbols-outlined text-[24px]">notifications</span>
                         {/* Fake badge mapping to real future hook */}
                         <span className="absolute top-2 right-2 size-2.5 rounded-full bg-[#F4845F] border-2 border-[#0A1A2F]"></span>
                     </button>
                     <button onClick={() => navigate('/settings')} className="flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group mt-2">
-                        <span className="material-symbols-outlined text-[26px]">settings</span>
+                        <span className="material-symbols-outlined text-[24px]">settings</span>
                     </button>
                 </nav>
             </div>
@@ -1585,6 +1585,7 @@ const StitchChat = () => {
 
                 {isMobile ? (
                     <MobileChatLayout
+                        navigationSidebar={<NavigationSidebar />}
                         contactsSidebar={<ContactsSidebarContent />}
                     />
                 ) : (
