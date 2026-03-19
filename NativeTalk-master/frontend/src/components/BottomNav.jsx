@@ -7,9 +7,7 @@ const BottomNav = () => {
 
     const navItems = [
         { icon: 'chat', label: 'Conversas', path: '/dashboard', hasNotification: true },
-        { icon: 'cell_tower', label: 'Ao Vivo', path: '/live' },
         { icon: 'group', label: 'Contatos', path: '/contacts' },
-        { icon: 'translate', label: 'Intérprete', path: '/interpreter' },
         { icon: 'notifications', label: 'Notificações', path: '/notifications' },
         { icon: 'settings', label: 'Ajustes', path: '/settings' },
     ];
@@ -20,8 +18,8 @@ const BottomNav = () => {
     };
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-2 py-3 bg-background-light/95 dark:bg-background-dark/95 border-t border-primary/20 backdrop-blur-lg pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
-            <div className="flex items-center justify-around w-full max-w-md mx-auto">
+        <nav className="md:hidden fixed bottom-1 left-4 right-4 z-50 flex items-center justify-around bg-slate-900/95 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl pb-[env(safe-area-inset-bottom)] h-20 px-2 transition-all duration-300">
+            <div className="flex items-center justify-around w-full">
                 {navItems.map((item) => {
                     const active = isActive(item.path);
 
@@ -29,20 +27,20 @@ const BottomNav = () => {
                         <button
                             key={item.path}
                             onClick={() => navigate(item.path)}
-                            className={`flex flex-col items-center gap-1 group organic-press transition-colors`}
+                            className={`flex flex-col items-center justify-center gap-1.5 organic-press min-w-[72px] min-h-[64px] rounded-xl transition-all ${active ? 'bg-primary/10' : 'hover:bg-white/5'}`}
                         >
                             <div className="relative">
                                 <span
-                                    className={`material-symbols-outlined text-2xl transition-colors ${active ? 'text-primary' : 'text-slate-400 dark:text-slate-500 group-hover:text-primary'}`}
+                                    className={`material-symbols-outlined text-[28px] transition-colors ${active ? 'text-primary' : 'text-slate-500 group-hover:text-primary'}`}
                                     style={{ fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}
                                 >
                                     {item.icon}
                                 </span>
                                 {item.hasNotification && (
-                                    <div className="absolute -top-1 -right-1 size-2 bg-primary rounded-full"></div>
+                                    <div className="absolute top-0 -right-1 size-2.5 bg-[#F4845F] rounded-full border-2 border-slate-900"></div>
                                 )}
                             </div>
-                            <span className={`text-[10px] uppercase tracking-wider ${active ? 'font-bold text-primary' : 'font-medium text-slate-500 dark:text-slate-400 group-hover:text-primary'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-tight ${active ? 'text-primary' : 'text-slate-500'}`}>
                                 {item.label}
                             </span>
                         </button>

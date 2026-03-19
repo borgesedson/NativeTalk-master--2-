@@ -1585,7 +1585,6 @@ const StitchChat = () => {
 
                 {isMobile ? (
                     <MobileChatLayout
-                        navigationSidebar={<NavigationSidebar />}
                         contactsSidebar={<ContactsSidebarContent />}
                     />
                 ) : (

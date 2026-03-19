@@ -33,7 +33,7 @@ import LiveJoinPage from './pages/LiveJoinPage';
 const NavigationHandler = () => {
   const location = useLocation();
   const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call') || location.pathname.includes('/interpreter') || location.pathname.includes('/live');
-  const isAuth = ['/', '/login', '/register', '/onboarding', '/profile-setup', '/stitch-demo'].includes(location.pathname);
+  const isAuth = ['/', '/login', '/register', '/onboarding', '/profile-setup'].includes(location.pathname);
 
   if (isChat || isAuth) return null;
   return <BottomNav />;
@@ -126,7 +126,7 @@ const App = () => {
               <Route path="/call/voice/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
               <Route path="/group-call/:groupId" element={<ProtectedRoute><GroupCallPage /></ProtectedRoute>} />
 
-              <Route path="/contacts" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
+              <Route path="/contacts" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
               <Route path="/history" element={<ProtectedRoute><CallHistoryPage /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
