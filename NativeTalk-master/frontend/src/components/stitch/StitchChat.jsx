@@ -6,7 +6,7 @@ import { StreamChat } from 'stream-chat';
 import { Chat, ChannelList, Channel, Window, MessageList, MessageInput, useChatContext, useMessageContext, useTypingContext, useMessageInputContext, useChannelActionContext } from 'stream-chat-react';
 import { StreamVideoClient, StreamVideo } from '@stream-io/video-react-sdk';
 import '@stream-io/video-react-sdk/dist/css/styles.css';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import useAuthUser from '../../hooks/useAuthUser';
 import { getStreamToken, translateMessage, getAllUsers, getUserProfile } from '../../lib/api';
 import { LANGUAGES } from '../../constants';
@@ -117,6 +117,8 @@ const preprocessAudio = async (blob) => {
 const NavigationSidebar = () => {
     const { authUser: user, logout } = useAuthUser();
     const navigate = useNavigate();
+    const location = useLocation();
+    const isMobile = useIsMobile();
 
     return (
         <div className="flex flex-col h-full items-center justify-between w-full">
