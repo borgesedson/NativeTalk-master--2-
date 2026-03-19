@@ -1369,6 +1369,7 @@ const StitchChat = () => {
             try {
                 const langCode = getLanguageCode(userLang);
                 console.log(`[Stream] Connecting user ${userId} with nativeLanguage: ${langCode}`);
+                const startTime = Date.now();
 
                 // Validate token before passing to Stream SDK
                 if (!tokenString || typeof tokenString !== 'string') {
@@ -1377,6 +1378,7 @@ const StitchChat = () => {
                     return;
                 }
 
+                console.log('[Stream] Starting connectUser...');
                 await client.connectUser(
                     {
                         id: userId,
@@ -1387,6 +1389,7 @@ const StitchChat = () => {
                     },
                     tokenString
                 );
+                console.log(`[Stream] connectUser finished in ${Date.now() - startTime}ms`);
 
                 // Add message listener for translations
                 client.on('message.new', async (event) => {
@@ -1394,16 +1397,19 @@ const StitchChat = () => {
                 });
 
                 // Init Stream Video
+                console.log('[Stream] Starting VideoClient init...');
                 const vClient = new StreamVideoClient({
                     apiKey: STREAM_API_KEY,
                     user: { id: userId, name: user.name, image: getAvatarUrl(user.url, user.name) },
                     token: tokenString
                 });
+                console.log('[Stream] VideoClient instance created');
 
                 if (!cleanup) {
                     setChatClient(client);
                     setVideoClient(vClient);
                     setLoading(false);
+                    console.log('[Stream] Init sequence complete, loading set to false');
                 }
             } catch (err) {
                 console.error("Connect error", err);
