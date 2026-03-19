@@ -220,8 +220,8 @@ const OnlineUsersRow = () => {
     return (
         <div className="flex overflow-x-auto hide-scrollbar px-6 pb-4 gap-4 border-b border-white/5 mb-4 pt-2">
             {onlineUsers.map((u) => (
-                <div 
-                    key={u.id} 
+                <div
+                    key={u.id}
                     onClick={() => handleUserClick(u)}
                     className="flex flex-col items-center gap-1.5 cursor-pointer shrink-0"
                 >
@@ -360,7 +360,7 @@ const NewChatModal = ({ isOpen, onClose }) => {
                 members: [client.user.id, selectedUser.id],
             });
             await channel.watch();
-            
+
             if (isMobile) {
                 toast.success('Abrindo chat...', { id: toastId });
                 navigate(`/chat/${selectedUser.id}`);
@@ -442,7 +442,7 @@ const ContactsSidebarContent = () => {
     }), [userId]);
 
     const sort = useMemo(() => ({ last_message_at: -1 }), []);
-    const options = useMemo(() => ({ 
+    const options = useMemo(() => ({
         limit: 20,
         watch: true,
         state: true,
@@ -569,7 +569,7 @@ const ContactsSidebarContent = () => {
                                 <p className="mb-8 text-[14px] max-w-[200px] mx-auto text-slate-400 leading-relaxed font-normal">
                                     {channelSearch ? "Nenhuma conversa encontrada." : "Suas conversas recentes aparecerão aqui."}
                                 </p>
-                                <button 
+                                <button
                                     onClick={() => setIsNewChatOpen(true)}
                                     className="bg-primary hover:bg-primary-focus text-white px-8 py-3 rounded-full text-[14px] font-bold shadow-xl active:scale-95 transition-all flex items-center gap-2 mx-auto"
                                 >
@@ -984,7 +984,7 @@ const ChatInput = () => {
         setText(''); // Clear immediately for UX
         try {
             console.log('[ChatInput] Sending message to channel:', channel.id);
-            await channel.sendMessage({ 
+            await channel.sendMessage({
                 text: messageText,
                 originalLanguage: authUser?.native_language || 'pt'
             });
@@ -1369,7 +1369,6 @@ const StitchChat = () => {
             try {
                 const langCode = getLanguageCode(userLang);
                 console.log(`[Stream] Connecting user ${userId} with nativeLanguage: ${langCode}`);
-                const startTime = Date.now();
 
                 // Validate token before passing to Stream SDK
                 if (!tokenString || typeof tokenString !== 'string') {
@@ -1378,7 +1377,6 @@ const StitchChat = () => {
                     return;
                 }
 
-                console.log('[Stream] Starting connectUser...');
                 await client.connectUser(
                     {
                         id: userId,
@@ -1389,7 +1387,6 @@ const StitchChat = () => {
                     },
                     tokenString
                 );
-                console.log(`[Stream] connectUser finished in ${Date.now() - startTime}ms`);
 
                 // Add message listener for translations
                 client.on('message.new', async (event) => {
@@ -1397,19 +1394,16 @@ const StitchChat = () => {
                 });
 
                 // Init Stream Video
-                console.log('[Stream] Starting VideoClient init...');
                 const vClient = new StreamVideoClient({
                     apiKey: STREAM_API_KEY,
                     user: { id: userId, name: user.name, image: getAvatarUrl(user.url, user.name) },
                     token: tokenString
                 });
-                console.log('[Stream] VideoClient instance created');
 
                 if (!cleanup) {
                     setChatClient(client);
                     setVideoClient(vClient);
                     setLoading(false);
-                    console.log('[Stream] Init sequence complete, loading set to false');
                 }
             } catch (err) {
                 console.error("Connect error", err);
@@ -1591,6 +1585,7 @@ const StitchChat = () => {
 
                 {isMobile ? (
                     <MobileChatLayout
+                        navigationSidebar={<NavigationSidebar />}
                         contactsSidebar={<ContactsSidebarContent />}
                     />
                 ) : (
