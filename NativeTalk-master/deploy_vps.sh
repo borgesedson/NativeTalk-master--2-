@@ -58,7 +58,7 @@ mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
 cat <<NGINX > /etc/nginx/sites-available/nativetalk
 server {
     listen 80;
-    server_name 82.25.64.9;
+    server_name nativetalk.duckdns.org;
 
     location /api {
         proxy_pass http://localhost:3000;
@@ -83,5 +83,8 @@ echo "Testing Nginx configuration..."
 nginx -t
 echo "Restarting Nginx..."
 systemctl restart nginx
+
+echo "Configuring SSL Certificate..."
+certbot --nginx -d nativetalk.duckdns.org --non-interactive --agree-tos -m admin@duckdns.org --redirect || true
 
 echo "--- DEPLOYMENT SUCCESSFUL ---"
