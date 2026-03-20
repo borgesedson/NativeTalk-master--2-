@@ -1,14 +1,27 @@
+import { useState, useEffect } from "react";
 import { useChannelStateContext } from "stream-chat-react";
 import { useNavigate } from "react-router";
 import { useCall } from "../contexts/CallManager";
 import useAuthUser from "../hooks/useAuthUser";
 import { getLanguageCode } from "../lib/utils";
+import { translationEngine } from "../lib/translationEngine";
 
 const CustomChannelHeader = ({ handleVideoCall }) => {
   const { channel } = useChannelStateContext();
   const navigate = useNavigate();
   const { startCall } = useCall();
   const { authUser } = useAuthUser();
+  const [isTranslationReady, setIsTranslationReady] = useState(translationEngine.isReady);
+
+  useEffect(() => {
+    const checkState = () => {
+      if (translationEngine.isReady !== isTranslationReady) {
+        setIsTranslationReady(translationEngine.isReady);
+      }
+    };
+    const interval = setInterval(checkState, 2000);
+    return () => clearInterval(interval);
+  }, [isTranslationReady]);
 
   const members = Object.values(channel.state.members || {});
   const otherMember = members.find(member => member.user_id !== channel._client.userID);
@@ -52,8 +65,14 @@ const CustomChannelHeader = ({ handleVideoCall }) => {
 
         <div className="flex flex-col flex-1 min-w-0 pr-2">
           <h1 className="text-base font-bold leading-tight text-white whitespace-nowrap overflow-hidden text-ellipsis">{displayName}</h1>
-          <span className="text-xs text-[#2ECC71] mt-0.5">
+          <span className="text-xs text-[#2ECC71] mt-0.5 flex items-center gap-1.5 font-medium">
             {isOnline ? 'Online' : 'Offline'} • 🌐 {sourceLang}→{targetLang}
+            {isTranslationReady && (
+              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500/10 text-green-500 border border-green-500/20 rounded text-[10px] font-bold animate-in fade-in zoom-in duration-500">
+                <span className="material-symbols-outlined text-[12px]">lock</span>
+                Privado
+              </span>
+            )}
           </span>
         </div>
       </div>

@@ -163,20 +163,29 @@ export const THEMES = [
 ];
 
 export const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "es", label: "Spanish" },
-  { code: "fr", label: "French" },
-  { code: "de", label: "German" },
-  { code: "zh", label: "Mandarin" },
-  { code: "ja", label: "Japanese" },
-  { code: "ko", label: "Korean" },
-  { code: "hi", label: "Hindi" },
-  { code: "ru", label: "Russian" },
-  { code: "pt", label: "Portuguese" },
-  { code: "ar", label: "Arabic" },
-  { code: "it", label: "Italian" },
-  { code: "tr", label: "Turkish" },
-  { code: "nl", label: "Dutch" },
+  { code: 'pt', label: 'Português', flag: '🇧🇷' },
+  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
+  { code: 'ja', label: '日本語', flag: '🇯🇵' },
+  { code: 'zh', label: '中文', flag: '🇨🇳' },
+  { code: 'ko', label: '한국어', flag: '🇰🇷' },
+  { code: 'ar', label: 'العربية', flag: '🇸🇦' },
+  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
+  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
+  { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'th', label: 'ไทย', flag: '🇹🇭' },
+  { code: 'id', label: 'Bahasa Indonesia', flag: '🇮🇩' },
+  { code: 'pl', label: 'Polski', flag: '🇵🇱' },
+  { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
+  { code: 'sv', label: 'Svenska', flag: '🇸🇪' },
+  { code: 'da', label: 'Dansk', flag: '🇩🇰' },
+  { code: 'fi', label: 'Suomi', flag: '🇫🇮' },
+  { code: 'no', label: 'Norsk', flag: '🇳🇴' },
+  { code: 'el', label: 'Ελληνικά', flag: '🇬🇷' }
 ];
 
 export const LANGUAGE_TO_FLAG = {

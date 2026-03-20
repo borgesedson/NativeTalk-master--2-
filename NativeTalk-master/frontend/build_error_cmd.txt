@@ -1,0 +1,39 @@
+
+> nativetalk-frontend@1.2.0 build
+> vite build
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[36mvite v6.3.3 [32mbuilding for production...[36m[39m
+transforming...
+
+🌼   [35mdaisyUI[39m [2m4.12.24[22m
+├─ [32m✔︎[39m 2 themes added[2m		https://daisyui.com/docs/themes[22m
+╰─ [32m★[39m [0mStar daisyUI on GitHub[0m	[2mhttps://github.com/saadeghi/daisyui[22m
+
+[32m✓[39m 44 modules transformed.
+
+PWA v0.19.8
+mode      generateSW
+precache  16 entries (3752.24 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-3896e580.js
+[31m✗[39m Build failed in 15.68s
+[31merror during build:
+[31m[vite-plugin-pwa:build] [plugin vite-plugin-pwa:build] There was an error during the build:
+  [vite]: Rollup failed to resolve import "@xenova/transformers" from "C:/Users/Cunae/Downloads/NativeTalk-master (2)/NativeTalk-master/frontend/src/lib/translationEngine.js".
+This is most likely unintended because it can break your application at runtime.
+If you do want to externalize this module explicitly add it to
+`build.rollupOptions.external`
+Additionally, handling the error in the 'buildEnd' hook caused the following error:
+  [vite]: Rollup failed to resolve import "@xenova/transformers" from "C:/Users/Cunae/Downloads/NativeTalk-master (2)/NativeTalk-master/frontend/src/lib/translationEngine.js".
+This is most likely unintended because it can break your application at runtime.
+If you do want to externalize this module explicitly add it to
+`build.rollupOptions.external`[31m
+    at getRollupError (file:///C:/Users/Cunae/Downloads/NativeTalk-master%20(2)/NativeTalk-master/frontend/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+    at file:///C:/Users/Cunae/Downloads/NativeTalk-master%20(2)/NativeTalk-master/frontend/node_modules/rollup/dist/es/shared/node-entry.js:23467:39
+    at async catchUnfinishedHookActions (file:///C:/Users/Cunae/Downloads/NativeTalk-master%20(2)/NativeTalk-master/frontend/node_modules/rollup/dist/es/shared/node-entry.js:22925:16)
+    at async rollupInternal (file:///C:/Users/Cunae/Downloads/NativeTalk-master%20(2)/NativeTalk-master/frontend/node_modules/rollup/dist/es/shared/node-entry.js:23450:5)
+    at async buildEnvironment (file:///C:/Users/Cunae/Downloads/NativeTalk-master%20(2)/NativeTalk-master/frontend/node_modules/vite/dist/node/chunks/dep-BMIURPaQ.js:46158:14)
+    at async Object.defaultBuildApp [as buildApp] (file:///C:/Users/Cunae/Downloads/NativeTalk-master%20(2)/NativeTalk-master/frontend/node_modules/vite/dist/node/chunks/dep-BMIURPaQ.js:46636:5)
+    at async CAC.<anonymous> (file:///C:/Users/Cunae/Downloads/NativeTalk-master%20(2)/NativeTalk-master/frontend/node_modules/vite/dist/node/cli.js:863:7)[39m

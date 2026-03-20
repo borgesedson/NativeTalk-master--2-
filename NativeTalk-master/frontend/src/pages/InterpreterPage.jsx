@@ -5,15 +5,7 @@ import { toast } from "react-hot-toast";
 import { uploadAudio, transcribeAudio } from "../lib/api";
 import useAuthUser from "../hooks/useAuthUser";
 import { getLanguageCode } from "../lib/utils";
-
-const LANGUAGES = [
-    { code: 'pt', name: 'Português', flag: '🇧🇷' },
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-];
+import { LANGUAGES } from "../constants";
 
 export default function InterpreterPage() {
     const navigate = useNavigate();
@@ -144,7 +136,7 @@ export default function InterpreterPage() {
                         className="bg-white/10 text-white rounded-xl px-4 py-2 border border-white/10 focus:outline-none focus:border-primary font-medium"
                     >
                         {LANGUAGES.map(l => (
-                            <option key={l.code} value={l.code} className="text-slate-900">{l.flag} {l.name}</option>
+                            <option key={l.code} value={l.code} className="text-slate-900">{l.flag} {l.label}</option>
                         ))}
                     </select>
                     {side === 'top' && (

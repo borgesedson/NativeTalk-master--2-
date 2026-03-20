@@ -12,6 +12,7 @@ import PWAManager from './components/PWAManager';
 import CallManager from './contexts/CallManager';
 import BottomNav from './components/BottomNav';
 import { useLocation } from 'react-router';
+import { translationEngine } from './lib/translationEngine';
 
 // Static imports for all pages
 import HomePage from './pages/HomePage';
@@ -26,13 +27,10 @@ import CallHistoryPage from './pages/CallHistoryPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
 import StitchDemoPage from './pages/StitchDemoPage';
-import InterpreterPage from './pages/InterpreterPage';
-import LiveSessionPage from './pages/LiveSessionPage';
-import LiveJoinPage from './pages/LiveJoinPage';
 
 const NavigationHandler = () => {
   const location = useLocation();
-  const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call') || location.pathname.includes('/interpreter') || location.pathname.includes('/live');
+  const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call');
   const isAuth = ['/', '/login', '/register', '/onboarding', '/profile-setup'].includes(location.pathname);
 
   if (isChat || isAuth) return null;
@@ -78,6 +76,10 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const App = () => {
+  useEffect(() => {
+    translationEngine.startBackgroundDownload();
+  }, []);
+
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <AuthProvider>
@@ -117,9 +119,6 @@ const App = () => {
               <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
               <Route path="/groups/:id" element={<ProtectedRoute><GroupChatPage /></ProtectedRoute>} />
 
-              <Route path="/interpreter" element={<ProtectedRoute><InterpreterPage /></ProtectedRoute>} />
-              <Route path="/live" element={<ProtectedRoute><LiveSessionPage /></ProtectedRoute>} />
-              <Route path="/live/:code" element={<LiveJoinPage />} />
 
               <Route path="/call/:callId?" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
               <Route path="/call/video/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />

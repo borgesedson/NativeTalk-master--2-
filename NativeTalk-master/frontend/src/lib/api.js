@@ -1,5 +1,6 @@
 import { insforge, db, auth, storage } from './insforge';
 import { getLanguageCode } from './utils';
+import { translationEngine } from './translationEngine';
 
 // Networking Config
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
@@ -694,6 +695,22 @@ export const translateMessage = async (text, targetUserId, forcedTargetLang = nu
 
     if (sourceLang === targetLang) {
       return { translation: { text, language: targetLang }, translatedText: text, sourceLanguage: sourceLang, targetLanguage: targetLang };
+    }
+
+    // 1. Tentar Tradução Local (Privada / Offline)
+    try {
+      const localTranslation = await translationEngine.translate(text, sourceLang, targetLang);
+      if (localTranslation) {
+        console.log(`[API] Local translation used: ${sourceLang} -> ${targetLang}`);
+        return { 
+          translatedText: localTranslation, 
+          sourceLanguage: sourceLang, 
+          targetLanguage: targetLang,
+          isLocal: true 
+        };
+      }
+    } catch (localErr) {
+      console.warn("[API] Local translation failed, falling back to network:", localErr);
     }
 
     // 2. Usar Proxy do Backend (que encaminha para Argos VPS) ou Fallback Offline

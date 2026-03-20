@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import { Search, Globe } from 'lucide-react';
+import { LANGUAGES } from '../constants';
 
 const LanguageSelector = ({
   value,
@@ -11,60 +11,15 @@ const LanguageSelector = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
-  const supportedLanguages = [
-    // Top 10 idiomas mais falados
-    { code: 'zh-CN', name: '中文 (简体)', nativeName: 'Chinese (Simplified)', flag: '🇨🇳', speakers: '918M', category: 'top' },
-    { code: 'es-ES', name: 'Español', nativeName: 'Spanish', flag: '🇪🇸', speakers: '460M', category: 'top' },
-    { code: 'en-US', name: 'English', nativeName: 'English', flag: '🇺🇸', speakers: '380M', category: 'top' },
-    { code: 'hi-IN', name: 'हिन्दी', nativeName: 'Hindi', flag: '🇮🇳', speakers: '341M', category: 'top' },
-    { code: 'ar-SA', name: 'العربية', nativeName: 'Arabic', flag: '🇸🇦', speakers: '422M', category: 'top' },
-    { code: 'pt-BR', name: 'Português (Brasil)', nativeName: 'Portuguese (Brazil)', flag: '🇧🇷', speakers: '260M', category: 'top' },
-    { code: 'bn-BD', name: 'বাংলা', nativeName: 'Bengali', flag: '🇧🇩', speakers: '265M', category: 'top' },
-    { code: 'ru-RU', name: 'Русский', nativeName: 'Russian', flag: '🇷🇺', speakers: '154M', category: 'top' },
-    { code: 'ja-JP', name: '日本語', nativeName: 'Japanese', flag: '🇯🇵', speakers: '125M', category: 'top' },
-    { code: 'pa-IN', name: 'ਪੰਜਾਬੀ', nativeName: 'Punjabi', flag: '🇮🇳', speakers: '113M', category: 'top' },
-
-    // Idiomas europeus
-    { code: 'de-DE', name: 'Deutsch', nativeName: 'German', flag: '🇩🇪', speakers: '76M', category: 'european' },
-    { code: 'fr-FR', name: 'Français', nativeName: 'French', flag: '🇫🇷', speakers: '80M', category: 'european' },
-    { code: 'it-IT', name: 'Italiano', nativeName: 'Italian', flag: '🇮🇹', speakers: '65M', category: 'european' },
-    { code: 'tr-TR', name: 'Türkçe', nativeName: 'Turkish', flag: '🇹🇷', speakers: '80M', category: 'european' },
-    { code: 'pl-PL', name: 'Polski', nativeName: 'Polish', flag: '🇵🇱', speakers: '45M', category: 'european' },
-    { code: 'nl-NL', name: 'Nederlands', nativeName: 'Dutch', flag: '🇳🇱', speakers: '24M', category: 'european' },
-    { code: 'ro-RO', name: 'Română', nativeName: 'Romanian', flag: '🇷🇴', speakers: '24M', category: 'european' },
-    { code: 'uk-UA', name: 'Українська', nativeName: 'Ukrainian', flag: '🇺🇦', speakers: '37M', category: 'european' },
-    { code: 'cs-CZ', name: 'Čeština', nativeName: 'Czech', flag: '🇨🇿', speakers: '10M', category: 'european' },
-    { code: 'sv-SE', name: 'Svenska', nativeName: 'Swedish', flag: '🇸🇪', speakers: '10M', category: 'european' },
-    { code: 'no-NO', name: 'Norsk', nativeName: 'Norwegian', flag: '🇳🇴', speakers: '5M', category: 'european' },
-    { code: 'da-DK', name: 'Dansk', nativeName: 'Danish', flag: '🇩🇰', speakers: '6M', category: 'european' },
-    { code: 'fi-FI', name: 'Suomi', nativeName: 'Finnish', flag: '🇫🇮', speakers: '5M', category: 'european' },
-
-    // Idiomas asiáticos
-    { code: 'ko-KR', name: '한국어', nativeName: 'Korean', flag: '🇰🇷', speakers: '77M', category: 'asian' },
-    { code: 'th-TH', name: 'ไทย', nativeName: 'Thai', flag: '🇹🇭', speakers: '61M', category: 'asian' },
-    { code: 'vi-VN', name: 'Tiếng Việt', nativeName: 'Vietnamese', flag: '🇻🇳', speakers: '76M', category: 'asian' },
-    { code: 'id-ID', name: 'Bahasa Indonesia', nativeName: 'Indonesian', flag: '🇮🇩', speakers: '43M', category: 'asian' },
-    { code: 'ms-MY', name: 'Bahasa Melayu', nativeName: 'Malay', flag: '🇲🇾', speakers: '19M', category: 'asian' },
-    { code: 'tl-PH', name: 'Filipino', nativeName: 'Filipino', flag: '🇵🇭', speakers: '45M', category: 'asian' },
-
-    // Outros idiomas importantes
-    { code: 'te-IN', name: 'తెలుగు', nativeName: 'Telugu', flag: '🇮🇳', speakers: '74M', category: 'indian' },
-    { code: 'mr-IN', name: 'मराठी', nativeName: 'Marathi', flag: '🇮🇳', speakers: '72M', category: 'indian' },
-    { code: 'ta-IN', name: 'தமிழ்', nativeName: 'Tamil', flag: '🇮🇳', speakers: '69M', category: 'indian' },
-    { code: 'gu-IN', name: 'ગુજરાતી', nativeName: 'Gujarati', flag: '🇮🇳', speakers: '56M', category: 'indian' },
-    { code: 'ur-PK', name: 'اردو', nativeName: 'Urdu', flag: '🇵🇰', speakers: '70M', category: 'middle-east' },
-    { code: 'fa-IR', name: 'فارسی', nativeName: 'Persian', flag: '🇮🇷', speakers: '62M', category: 'middle-east' },
-    { code: 'he-IL', name: 'עברית', nativeName: 'Hebrew', flag: '🇮🇱', speakers: '9M', category: 'middle-east' },
-    { code: 'sw-KE', name: 'Kiswahili', nativeName: 'Swahili', flag: '🇰🇪', speakers: '16M', category: 'african' }
-  ];
+  const supportedLanguages = LANGUAGES.map(lang => ({
+    ...lang,
+    name: lang.label,
+    nativeName: lang.label,
+    category: 'all'
+  }));
 
   const categories = {
-    top: 'Mais Falados (Top 10)',
-    european: 'Idiomas Europeus',
-    asian: 'Idiomas Asiáticos',
-    indian: 'Idiomas Indianos',
-    'middle-east': 'Oriente Médio',
-    african: 'Idiomas Africanos'
+    all: 'Idiomas Suportados'
   };
 
   const filteredLanguages = supportedLanguages.filter(lang =>

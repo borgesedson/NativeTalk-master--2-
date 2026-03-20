@@ -134,9 +134,6 @@ const NavigationSidebar = () => {
                     <button onClick={() => navigate('/contacts')} className={`relative flex items-center justify-center p-3 rounded-xl transition-all organic-press ${location.pathname === '/contacts' ? 'bg-[#0D7377] text-white shadow-lg' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`}>
                         <span className="material-symbols-outlined text-[24px]">group</span>
                     </button>
-                    <button onClick={() => navigate('/live')} className={`relative flex items-center justify-center p-3 rounded-xl transition-all organic-press ${location.pathname.startsWith('/live') ? 'bg-[#0D7377] text-white shadow-lg' : 'hover:bg-white/5 text-slate-400 hover:text-white'}`} title="Sessão ao Vivo">
-                        <span className="material-symbols-outlined text-[24px]">cell_tower</span>
-                    </button>
                     <button onClick={() => navigate('/favorites')} className="flex items-center justify-center p-3 hover:text-white hover:bg-white/5 rounded-xl transition-colors group">
                         <span className="material-symbols-outlined text-[24px]">star</span>
                     </button>
