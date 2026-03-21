@@ -645,6 +645,19 @@ export const getGroups = async () => {
 
 export const getStreamToken = async () => {
   try {
+    const CACHE_KEY = 'stream_chat_token_v2';
+    const CACHE_TIME_KEY = 'stream_chat_token_time_v2';
+    const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+    // 1. Check Cache
+    const cachedToken = localStorage.getItem(CACHE_KEY);
+    const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+    
+    if (cachedToken && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_TTL) {
+      console.log('[Stream] Using cached token (TTL ok)');
+      return { token: cachedToken };
+    }
+
     console.log('[Auth] Fetching fresh Stream token from local backend...');
     const { data: { session } } = await insforge.auth.getCurrentSession();
     
@@ -660,13 +673,14 @@ export const getStreamToken = async () => {
     
     const data = await response.json();
     
-    // Validate token before returning
-    console.log('[Stream] Token response:', { hasToken: !!data?.token, tokenType: typeof data?.token });
-    
     if (!data?.token || typeof data.token !== 'string') {
       console.error('[Stream] Invalid token received from backend:', data);
       throw new Error('Backend returned invalid Stream token');
     }
+
+    // 2. Save to Cache
+    localStorage.setItem(CACHE_KEY, data.token);
+    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
     
     return data;
   } catch (error) {

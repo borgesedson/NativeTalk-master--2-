@@ -441,11 +441,27 @@ const NewChatModal = ({ isOpen, onClose }) => {
     );
 };
 
-const ContactsSidebarContent = () => {
-    const { client } = useChatContext();
-    const currentUser = client.user;
+const ContactsSidebarContent = ({ isLoading }) => {
+    const { client } = useChatContext() || {};
+    const currentUser = client?.user;
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
     const [isNewChatOpen, setIsNewChatOpen] = useState(false);
     const [channelSearch, setChannelSearch] = useState("");
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col h-full bg-[#0D2137]">
+                <div className="p-6">
+                    <div className="h-8 bg-white/5 rounded-lg w-1/3 mb-6 animate-pulse" />
+                    <div className="h-12 bg-white/5 rounded-xl w-full mb-8 animate-pulse" />
+                    <div className="space-y-2">
+                        {[1, 2, 3, 4, 5, 6].map(i => <SkeletonRow key={i} />)}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // Safely extract userId - MUST be a valid string for Stream SDK
     const userId = currentUser?.id;
@@ -1165,10 +1181,12 @@ const ChatInput = () => {
     );
 };
 
-const MainChatAreaContent = ({ translations, onTranslate, onStartVoiceCall, onStartVideoCall }) => {
-    const { channel } = useChatContext();
-    const { typing } = useTypingContext();
+const MainChatAreaContent = ({ translations, onTranslate, onStartVoiceCall, onStartVideoCall, isLoading }) => {
+    const { channel } = useChatContext() || {};
+    const { typing } = useTypingContext() || {};
     const { authUser } = useAuthUser();
+
+    if (isLoading) return <SkeletonChat />;
 
     if (!channel) return (
         <div className="flex flex-col h-full w-full items-center justify-center bg-transparent">
@@ -1300,6 +1318,34 @@ const MainChatAreaContent = ({ translations, onTranslate, onStartVoiceCall, onSt
         </div>
     );
 };
+
+// --- Skeletons ---
+const SkeletonRow = () => (
+    <div className="flex items-center gap-3 p-4 animate-pulse">
+        <div className="size-12 rounded-2xl bg-white/5 shrink-0" />
+        <div className="flex-1 space-y-2">
+            <div className="h-4 bg-white/5 rounded w-3/4" />
+            <div className="h-3 bg-white/5 rounded w-1/2" />
+        </div>
+    </div>
+);
+
+const SkeletonChat = () => (
+    <div className="flex flex-col h-full w-full animate-pulse bg-transparent">
+        <div className="h-[88px] border-b border-white/5 flex items-center px-8 gap-4">
+            <div className="size-12 rounded-full bg-white/5" />
+            <div className="h-4 bg-white/5 rounded w-32" />
+        </div>
+        <div className="flex-1 p-8 space-y-6">
+            <div className="flex gap-3"><div className="size-8 rounded-full bg-white/5" /><div className="h-12 bg-white/5 rounded-2xl w-2/3" /></div>
+            <div className="flex gap-3 justify-end"><div className="h-12 bg-white/5 rounded-2xl w-1/2" /><div className="size-8 rounded-full bg-white/5" /></div>
+            <div className="flex gap-3"><div className="size-8 rounded-full bg-white/5" /><div className="h-12 bg-white/5 rounded-2xl w-1/3" /></div>
+        </div>
+        <div className="p-6 border-t border-white/5">
+            <div className="h-14 bg-white/5 rounded-[2rem] w-full" />
+        </div>
+    </div>
+);
 
 if (!STREAM_API_KEY) {
     console.error('[Stream] CRITICAL: VITE_STREAM_API_KEY is missing from environment variables!');
@@ -1552,13 +1598,52 @@ const StitchChat = () => {
         }
     };
 
-    if (authLoading || loading || !chatClient || !streamReady) {
+    if (authLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-[#0A1A2F] text-slate-400">
                 <div className="text-center">
                     <div className="size-12 rounded-full border-t-2 border-primary animate-spin mx-auto mb-4"></div>
-                    <p className="text-sm font-medium">Conectando ao NativeTalk...</p>
                 </div>
+            </div>
+        );
+    }
+
+    const navigationSidebar = <NavigationSidebar />;
+    const contactsSidebar = <ContactsSidebarContent isLoading={loading || !streamReady} />;
+    const mainChatArea = (
+        <Channel>
+            <Window>
+                <MainChatAreaContent
+                    translations={translations}
+                    onTranslate={handleTranslate}
+                    onStartVoiceCall={startVoiceCall}
+                    onStartVideoCall={startVideoCall}
+                    isLoading={loading || !streamReady}
+                />
+            </Window>
+        </Channel>
+    );
+
+    const skeletonMainChatArea = <MainChatAreaContent isLoading={true} />;
+
+    // Render logic: Show structure immediately, wrap in Stream providers only when ready
+    if (!chatClient || !streamReady) {
+        return (
+            <div className="str-chat__theme-dark">
+                {isMobile ? (
+                    <MobileChatLayout
+                        isChatOpen={isMobileChatOpen}
+                        navigationSidebar={navigationSidebar}
+                        contactsSidebar={contactsSidebar}
+                        mainChatArea={skeletonMainChatArea}
+                    />
+                ) : (
+                    <DesktopChatLayout
+                        navigationSidebar={navigationSidebar}
+                        contactsSidebar={contactsSidebar}
+                        mainChatArea={skeletonMainChatArea}
+                    />
+                )}
             </div>
         );
     }
@@ -1566,7 +1651,7 @@ const StitchChat = () => {
     return (
         <StreamVideo client={videoClient}>
             <Chat client={chatClient} theme="str-chat__theme-dark">
-                {/* 1. Overlays para as telas de chamadas */}
+                {/* 1. Overlays for call screens */}
                 {callScreen === 'incoming' && incomingCall && caller && (
                     <IncomingCallScreen
                         call={incomingCall}
@@ -1577,7 +1662,6 @@ const StitchChat = () => {
                                 await incomingCall.accept();
                                 await incomingCall.join();
                                 setActiveCall(incomingCall);
-                                // Identificar se é vídeo (default) ou voz (audio_room)
                                 setCallScreen(incomingCall.type === 'audio_room' ? 'voice' : 'video');
                             } catch (err) {
                                 console.error('[Call] Accept error:', err);
@@ -1632,37 +1716,15 @@ const StitchChat = () => {
                 {isMobile ? (
                     <MobileChatLayout
                         isChatOpen={isMobileChatOpen}
-                        navigationSidebar={<NavigationSidebar />}
-                        contactsSidebar={<ContactsSidebarContent />}
-                        mainChatArea={
-                            <Channel>
-                                <Window>
-                                    <MainChatAreaContent
-                                        translations={translations}
-                                        onTranslate={handleTranslate}
-                                        onStartVoiceCall={startVoiceCall}
-                                        onStartVideoCall={startVideoCall}
-                                    />
-                                </Window>
-                            </Channel>
-                        }
+                        navigationSidebar={navigationSidebar}
+                        contactsSidebar={contactsSidebar}
+                        mainChatArea={mainChatArea}
                     />
                 ) : (
                     <DesktopChatLayout
-                        navigationSidebar={<NavigationSidebar />}
-                        contactsSidebar={<ContactsSidebarContent />}
-                        mainChatArea={
-                            <Channel>
-                                <Window>
-                                    <MainChatAreaContent
-                                        translations={translations}
-                                        onTranslate={handleTranslate}
-                                        onStartVoiceCall={startVoiceCall}
-                                        onStartVideoCall={startVideoCall}
-                                    />
-                                </Window>
-                            </Channel>
-                        }
+                        navigationSidebar={navigationSidebar}
+                        contactsSidebar={contactsSidebar}
+                        mainChatArea={mainChatArea}
                     />
                 )}
             </Chat>
