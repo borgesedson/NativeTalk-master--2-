@@ -30,7 +30,7 @@ import StitchDemoPage from './pages/StitchDemoPage';
 
 const NavigationHandler = () => {
   const location = useLocation();
-  const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call');
+  const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call') || /^\/groups\/[^/]+$/.test(location.pathname);
   const isAuth = ['/', '/login', '/register', '/onboarding', '/profile-setup'].includes(location.pathname);
 
   if (isChat || isAuth) return null;

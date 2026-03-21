@@ -118,12 +118,12 @@ const MessagesPage = () => {
         <div className="max-w-5xl mx-auto px-6 py-8 md:py-12">
 
           {/* Header Section */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-16">
             <div>
               <motion.h1
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-3xl md:text-4xl font-bold tracking-tight"
+                className="text-2xl md:text-4xl font-bold tracking-tight"
               >
                 Mensagens
               </motion.h1>
@@ -131,13 +131,13 @@ const MessagesPage = () => {
             </div>
 
             <div className="relative group w-full md:w-80">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-gray-700 group-focus-within:text-primary transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gray-700 group-focus-within:text-primary transition-colors" />
               <input
                 type="text"
                 placeholder="Buscar conversa..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-4 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-gray-700"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 md:py-4 pl-12 pr-5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-gray-700"
               />
             </div>
           </div>

@@ -1,0 +1,47 @@
+NativeTalk Project Roadmap
+NativeTalk is a high-performance, real-time communication platform featuring automatic seamless translation and end-to-end (E2E) encryption. Built for global connectivity, it allows users to chat, call, and interact in their native languages without barriers.
+
+🛠 Tech Stack Overview
+Frontend
+Framework: React 18+ (Vite)
+State/Data: TanStack Query (React Query)
+Real-time Chat: Stream Chat SDK
+Video/Voice: Stream Video SDK
+Client-Side AI: Transformers.js (Xenova) for on-device translation
+Styling: Tailwind CSS 3.4
+Platform: PWA (Progressive Web App) with vite-plugin-pwa
+Backend
+Framework: Node.js / Express
+BaaS Layer: InsForge (PostgreSQL, Storage, Edge Functions)
+Encryption: Virgil Security / Custom E2E Layer
+Audio Processing: OpenAI Whisper (via VPS) for speech-to-text
+🚀 Current Status (MVP Phase)
+ Secure Authentication: Email/Password and OAuth integration.
+ Real-time 1:1 Chat: Seamless text messaging with Stream Chat.
+ Live Translation: On-the-fly message translation using local models (Transformers.js) and VPS fallback.
+ Video/Voice Calls: Integrated high-quality calling via Stream Video.
+ E2E Encryption: Private keys unwrapped on login, ensuring message privacy.
+ PWA Initialized: Installable on iOS/Android with splash screens and offline capabilities.
+ Mobile Sidebar UI: Responsive layout with unified navigation.
+🛣 Future Development (Roadmap)
+Phase 1: Performance & Polish (Current Focus)
+Model Loading Optimization: Implement sequential, lazy-loaded translation models to prevent UI Freezing during startup.
+Unified Mobile Layout: Enable desktop-like interaction on mobile (opening chats without page navigation).
+Initialization Speed: Defer non-critical background processes until the user is settled.
+Phase 2: Group & Social Features
+Group Chats: Full support for multi-user channels with real-time translation for all participants.
+Contact Directory: Global search and user discovery interface.
+Rich Media: Improved file sharing, voice notes with auto-transcription preview.
+Phase 3: Advanced AI & Integration
+Contextual Translation: Improved translation accuracy using conversation context.
+AI Chat Summarization: Quick catch-up for long group threads.
+GEO (Generative Engine Optimization): Optimizing app content for AI-driven discovery and interaction.
+⚙️ Deployment Requirements (for Replit)
+To run NativeTalk on Replit, ensure the following environment variables are set:
+
+VITE_STREAM_API_KEY: Get from Stream Dashboard.
+VITE_INSFORGE_PROJECT_ID: Your InsForge project identifier.
+VITE_API_URL: Backend API endpoint.
+VITE_E2E_PUBLIC_KEY: Encryption public key.
+Infrastructure Tip: Replit's environment handles Node.js well, but ensure the Transformers.js models have enough memory allocated (at least 2GB RAM is recommended for loading multiple models).
+

@@ -33,12 +33,22 @@ h3,
 
 .screen {
   min-height: 100dvh;
-  padding-bottom: 80px;
-  /* Space for BottomNav */
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .screen-no-nav {
   min-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Hide scrollbars utility */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* --- Premium Organic Design System --- */
@@ -150,15 +160,15 @@ h3,
 }
 
 /* ✅ Universal Touch Target Improvement (Accessibility) */
-button, 
-a, 
+/* Scoped to avoid breaking Stream Chat internal components */
 .organic-press,
-.touch-manipulation {
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.touch-target {
+  touch-action: manipulation;
+}
+
+/* Only apply min-size to standalone nav/action buttons, not inside Stream components */
+button:not(.str-chat button):not([class*="str-chat"]),
+a:not(.str-chat a):not([class*="str-chat"]) {
   touch-action: manipulation;
 }
 
