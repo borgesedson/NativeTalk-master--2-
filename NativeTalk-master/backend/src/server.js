@@ -43,7 +43,8 @@ const io = new Server(server, {
       // Allow any Vercel/Cloudflare subdomain and exact matches
       const isVercel = /\.vercel\.app$/.test(origin);
       const isCloudflare = /\.trycloudflare\.com$/.test(origin);
-      if (allowedOrigins.includes(origin) || isVercel || isCloudflare) {
+      const isReplit = /\.replit\.dev$/.test(origin) || /\.replit\.app$/.test(origin) || /\.repl\.co$/.test(origin);
+      if (allowedOrigins.includes(origin) || isVercel || isCloudflare || isReplit) {
         return callback(null, true);
       }
       console.log('🚨 Socket CORS blocked:', origin);
@@ -54,7 +55,7 @@ const io = new Server(server, {
   }
 });
 
-const PORT = process.env.PORT || 5080;
+const PORT = process.env.PORT || 5000;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -92,7 +93,10 @@ const allowedOrigins = [
   "http://nativetalk.duckdns.org",
   "https://nativetalk.duckdns.org",
   /\.vercel\.app$/,
-  /\.trycloudflare\.com$/
+  /\.trycloudflare\.com$/,
+  /\.replit\.dev$/,
+  /\.replit\.app$/,
+  /\.repl\.co$/
 ];
 
 app.use(
