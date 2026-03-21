@@ -32,8 +32,9 @@ const NavigationHandler = () => {
   const location = useLocation();
   const isChat = location.pathname.includes('/chat') || location.pathname.includes('/call') || location.pathname.includes('/group-call') || /^\/groups\/[^/]+$/.test(location.pathname);
   const isAuth = ['/', '/login', '/register', '/onboarding', '/profile-setup'].includes(location.pathname);
+  const isDashboard = location.pathname === '/dashboard';
 
-  if (isChat || isAuth) return null;
+  if (isChat || isAuth || isDashboard) return null;
   return <BottomNav />;
 };
 

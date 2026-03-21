@@ -721,3 +721,13 @@ img {
   display: flex !important;
   flex-direction: column !important;
 }
+
+/* Fix Stream ChannelList height in flex containers (critical for mobile) */
+.str-chat__channel-list,
+.str-chat__channel-list-messenger,
+.str-chat__channel-list-messenger__main {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+}

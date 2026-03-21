@@ -494,7 +494,7 @@ const ContactsSidebarContent = () => {
     }
 
     return (
-        <div className="h-full bg-transparent flex flex-col w-full text-white relative">
+        <div className="h-full bg-transparent flex flex-col w-full text-white relative overflow-hidden">
             <NewChatModal isOpen={isNewChatOpen} onClose={() => setIsNewChatOpen(false)} />
 
             <div className="px-5 md:px-6 pt-5 md:pt-6 pb-2 flex items-center justify-between">
@@ -513,18 +513,16 @@ const ContactsSidebarContent = () => {
 
             <OnlineUsersRow />
 
-            {!isMobile && (
-                <div className="px-6 mb-4 mt-2 relative">
-                    <input
-                        type="text"
-                        placeholder="Pesquisar..."
-                        value={channelSearch}
-                        onChange={(e) => setChannelSearch(e.target.value)}
-                        className="w-full bg-black/20 border border-white/5 rounded-xl py-3 pl-11 pr-4 text-[13px] text-white placeholder:text-slate-500 focus:outline-none focus:border-primary/50 transition-colors"
-                    />
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-500 text-[18px]">search</span>
-                </div>
-            )}
+            <div className={`${isMobile ? 'px-3 mb-2 mt-1' : 'px-6 mb-4 mt-2'} relative`}>
+                <input
+                    type="text"
+                    placeholder="Pesquisar..."
+                    value={channelSearch}
+                    onChange={(e) => setChannelSearch(e.target.value)}
+                    className={`w-full bg-black/20 border border-white/5 rounded-xl ${isMobile ? 'py-2 pl-9 pr-3 text-[13px]' : 'py-3 pl-11 pr-4 text-[13px]'} text-white placeholder:text-slate-500 focus:outline-none focus:border-primary/50 transition-colors`}
+                />
+                <span className={`absolute ${isMobile ? 'left-6 text-[16px]' : 'left-9 text-[18px]'} top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-500`}>search</span>
+            </div>
 
             {/* Floating Action Button (Mobile Only) */}
             {isMobile && !channelSearch && (
@@ -546,8 +544,8 @@ const ContactsSidebarContent = () => {
             )}
 
             <div
-                className="flex-1 overflow-y-auto hide-scrollbar px-2 md:px-4 pb-6 min-h-[300px]"
-                style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto' }}
+                className="flex-1 overflow-y-auto hide-scrollbar px-2 md:px-4 pb-4"
+                style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: 0 }}
             >
                 <div className="flex items-center gap-2 mb-3 px-2 text-slate-400 opacity-80 pt-2 shrink-0">
                     <span className="material-symbols-outlined text-[16px]">forum</span>
