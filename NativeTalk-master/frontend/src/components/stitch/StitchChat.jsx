@@ -13,8 +13,6 @@ import { LANGUAGES } from '../../constants';
 import DesktopChatLayout from '../layout/DesktopChatLayout';
 import MobileChatLayout from '../layout/MobileChatLayout';
 import useIsMobile from '../../hooks/useIsMobile';
-const BUILD_ID = 'v2.5.2-FINAL'; // Mobile Sidebar UI fix
-console.log('🚀 NativeTalk Build Active:', BUILD_ID);
 import { getAvatarUrl, getLanguageCode } from '../../lib/utils';
 import AudioRecorder from '../AudioRecorder';
 import CallingScreen from '../calls/CallingScreen';
@@ -24,6 +22,9 @@ import VideoCallScreen from '../calls/VideoCallScreen';
 import toast from 'react-hot-toast';
 import { uploadAudio, transcribeAudio } from '../../lib/api';
 import Logo from '../Logo';
+
+const BUILD_ID = 'v2.5.2-FINAL'; // Mobile Sidebar UI fix
+console.log('🚀 NativeTalk Build Active:', BUILD_ID);
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
@@ -207,9 +208,21 @@ const OnlineUsersRow = () => {
 
     if (onlineUsers.length === 0) return null; // "No online users: Hide the online users row entirely"
 
-    const handleUserClick = (u) => {
+    const handleUserClick = async (u) => {
         if (isMobile) {
-            navigate(`/chat/${u.id}`);
+            const toastId = toast.loading('Carregando chat...');
+            try {
+                const channel = client.channel('messaging', {
+                    members: [client.user.id, u.id],
+                });
+                await channel.watch();
+                setActiveChannel(channel);
+                window.dispatchEvent(new CustomEvent('toggle-mobile-chat', { detail: true }));
+                toast.dismiss(toastId);
+            } catch (err) {
+                console.error(err);
+                toast.error('Erro ao abrir conversa', { id: toastId });
+            }
         } else {
             // Desktop logic if needed, or just let them start a chat
             window.dispatchEvent(new CustomEvent('open-new-chat', { detail: { userId: u.id } }));
@@ -271,7 +284,8 @@ const CustomConversationRow = (props) => {
                 const targetId = otherUser?.id || otherUserId;
                 console.log('[Navigation] Mobile click, target:', targetId, 'isMobile:', isMobile);
                 if (isMobile && targetId) {
-                    navigate(`/chat/${targetId}`);
+                    setActiveChannel(channel);
+                    window.dispatchEvent(new CustomEvent('toggle-mobile-chat', { detail: true }));
                 } else {
                     setActiveChannel(channel);
                 }
@@ -362,7 +376,8 @@ const NewChatModal = ({ isOpen, onClose }) => {
 
             if (isMobile) {
                 toast.success('Abrindo chat...', { id: toastId });
-                navigate(`/chat/${selectedUser.id}`);
+                setActiveChannel(channel);
+                window.dispatchEvent(new CustomEvent('toggle-mobile-chat', { detail: true }));
             } else {
                 toast.dismiss(toastId);
                 setActiveChannel(channel);
@@ -727,6 +742,7 @@ const CustomChatHeader = ({ onStartVoiceCall, onStartVideoCall }) => {
     const { channel } = useChatContext();
     const { client } = useChatContext();
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const [showSearch, setShowSearch] = useState(false);
     const [showOptions, setShowOptions] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
@@ -741,11 +757,19 @@ const CustomChatHeader = ({ onStartVoiceCall, onStartVideoCall }) => {
     const isOnline = otherUser?.online;
 
     return (
-        <div className="h-[88px] shrink-0 border-b border-white/5 flex items-center justify-between px-8 bg-transparent relative">
-            <div className="flex items-center gap-4">
+        <div className="h-[88px] shrink-0 border-b border-white/5 flex items-center justify-between px-4 md:px-8 bg-transparent relative">
+            <div className="flex items-center gap-2 md:gap-4">
+                {isMobile && (
+                    <button 
+                        onClick={() => window.dispatchEvent(new CustomEvent('toggle-mobile-chat', { detail: false }))}
+                        className="size-10 rounded-full hover:bg-white/10 flex items-center justify-center text-slate-300 transition-colors mr-1"
+                    >
+                        <span className="material-symbols-outlined">arrow_back</span>
+                    </button>
+                )}
                 <div className="relative">
-                    <div className="size-12 rounded-full bg-cover bg-center shadow-lg border-2 border-[#111D2E]" style={{ backgroundImage: `url('${imgUrl || "https://ui-avatars.com/api/?name=" + name}')` }}></div>
-                    {isOnline && <div className="absolute bottom-0 right-0 size-3.5 border-[2.5px] border-[#111D2E] rounded-full bg-success"></div>}
+                    <div className="size-10 md:size-12 rounded-full bg-cover bg-center shadow-lg border-2 border-[#111D2E]" style={{ backgroundImage: `url('${imgUrl || "https://ui-avatars.com/api/?name=" + name}')` }}></div>
+                    {isOnline && <div className="absolute bottom-0 right-0 size-3 md:size-3.5 border-[2px] md:border-[2.5px] border-[#111D2E] rounded-full bg-success"></div>}
                 </div>
                 {showSearch ? (
                     <div className="flex items-center gap-2 animate-fadeIn bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 w-[300px]">
@@ -1023,23 +1047,32 @@ const ChatInput = () => {
             );
 
             const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-            const response = await fetch(`${API_BASE_URL}/stt`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    audio_url: audioUrl,
-                    from: 'auto',
-                    to: toLang
-                })
-            });
+            let response;
+            try {
+                response = await fetch(`${API_BASE_URL}/stt`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        audio_url: audioUrl,
+                        from: 'auto',
+                        to: toLang
+                    })
+                });
+            } catch (fetchError) {
+                console.error('[Audio] Connection error:', fetchError);
+                throw new Error("Serviço de transcrição (VPS) inacessível. Verifique se o backend e o servidor Whisper estão rodando.");
+            }
 
-            if (!response.ok) throw new Error("VPS STT failed");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "Falha no serviço de transcrição (VPS)");
+            }
             const result = await response.json();
 
             const transcript = result?.transcript || '';
             const translatedText = result?.translated || '';
             const detectedLang = result?.detected_language || authUser?.native_language || 'en';
-            if (!transcript) throw new Error("Não foi possível processar o áudio");
+            if (!transcript) throw new Error("Não foi possível transcrever o áudio.");
 
             await channel.sendMessage({
                 text: transcript,
@@ -1059,7 +1092,10 @@ const ChatInput = () => {
             toast.success('✅ Enviado!', { id: toastId });
         } catch (error) {
             console.error('[Audio] Error:', error);
-            toast.error(error.message || 'Erro ao processar áudio', { id: toastId });
+            const errorMessage = error.message.includes('Failed to fetch') || error.message.includes('inacessível') 
+                ? 'Serviço de áudio indisponível no momento' 
+                : error.message;
+            toast.error(errorMessage || 'Erro ao processar áudio', { id: toastId });
         } finally {
             setIsProcessingAudio(false);
         }
@@ -1280,6 +1316,17 @@ const StitchChat = () => {
     const isMobile = useIsMobile();
 
     // Unified Stream Readiness effect
+    const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
+
+    useEffect(() => {
+        const handleToggle = (e) => {
+            console.log('[Mobile] Toggle chat:', e.detail);
+            setIsMobileChatOpen(e.detail);
+        };
+        window.addEventListener('toggle-mobile-chat', handleToggle);
+        return () => window.removeEventListener('toggle-mobile-chat', handleToggle);
+    }, []);
+
     useEffect(() => {
         // Only wait for chatClient to be ready, videoClient is secondary and slower
         if (chatClient?.userID) {
@@ -1584,8 +1631,21 @@ const StitchChat = () => {
 
                 {isMobile ? (
                     <MobileChatLayout
+                        isChatOpen={isMobileChatOpen}
                         navigationSidebar={<NavigationSidebar />}
                         contactsSidebar={<ContactsSidebarContent />}
+                        mainChatArea={
+                            <Channel>
+                                <Window>
+                                    <MainChatAreaContent
+                                        translations={translations}
+                                        onTranslate={handleTranslate}
+                                        onStartVoiceCall={startVoiceCall}
+                                        onStartVideoCall={startVideoCall}
+                                    />
+                                </Window>
+                            </Channel>
+                        }
                     />
                 ) : (
                     <DesktopChatLayout

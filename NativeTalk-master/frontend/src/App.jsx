@@ -78,7 +78,11 @@ const ProtectedRoute = ({ children }) => {
 
 const App = () => {
   useEffect(() => {
-    translationEngine.startBackgroundDownload();
+    // 🚦 Defer background downloads to avoid saturating network/CPU on startup
+    const timer = setTimeout(() => {
+      translationEngine.startBackgroundDownload();
+    }, 5000);
+    return () => clearTimeout(timer);
   }, []);
 
   return (

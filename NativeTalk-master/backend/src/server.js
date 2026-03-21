@@ -332,7 +332,7 @@ app.post('/api/stt', async (req, res) => {
     if (audio_url) payload.audio_url = audio_url;
 
     console.log(`[STT] Calling Whisper VPS...`);
-    const whisperUrl = process.env.VITE_WHISPER_API_URL || 'http://127.0.0.1:5001/stt-and-translate';
+    const whisperUrl = process.env.WHISPER_API_URL || process.env.VITE_WHISPER_API_URL || 'http://127.0.0.1:5000/stt-and-translate';
     const response = await fetch(whisperUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

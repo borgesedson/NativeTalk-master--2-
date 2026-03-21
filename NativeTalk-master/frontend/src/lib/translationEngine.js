@@ -111,9 +111,8 @@ class TranslationEngine {
     }
 
     async startBackgroundDownload() {
-        console.log('[TranslationEngine] Iniciando download em segundo plano para idiomas prioritários...');
+        console.log('[TranslationEngine] Iniciando download em segundo plano sequencial para idiomas prioritários...');
         
-        // Top 5 idiomas prioritários baseados no pedido do usuário
         const priorityPairs = [
             { from: 'en', to: 'pt' },
             { from: 'pt', to: 'en' },
@@ -123,11 +122,21 @@ class TranslationEngine {
         ];
 
         for (const pair of priorityPairs) {
-            // Não esperamos (await) para não bloquear o app
-            this.getPipeline(pair.from, pair.to).catch(err => {
+            try {
+                // Check if already loaded to avoid redundant logs
+                const key = `${pair.from}-${pair.to}`;
+                if (this.pipelines[key]) continue;
+
+                console.log(`[TranslationEngine] Background download: ${pair.from}-${pair.to}`);
+                await this.getPipeline(pair.from, pair.to);
+                
+                // Wait 2 seconds between models to allow main thread to breathe
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (err) {
                 console.error(`[TranslationEngine] Falha no download em background para ${pair.from}-${pair.to}:`, err);
-            });
+            }
         }
+        console.log('[TranslationEngine] Todos os downloads prioritários concluídos ou em cache.');
     }
 }
 
