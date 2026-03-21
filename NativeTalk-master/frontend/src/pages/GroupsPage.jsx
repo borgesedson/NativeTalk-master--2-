@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router";
 import { Plus, Users, AlertCircle, Video, ArrowRight, Sparkles, Search, MessageSquare, Globe } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getGroups, initiateCall } from "../lib/api";
-import BottomNav from "../components/BottomNav";
 import CreateGroupModal from "../components/CreateGroupModal";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-hot-toast";
@@ -38,25 +37,24 @@ const GroupsPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-y-auto pb-28 font-display">
-      <BottomNav />
+    <div className="screen bg-[#0a0a0a] text-white overflow-y-auto font-display">
 
-      <main className="flex-1 overflow-y-auto relative pb-24 lg:pb-0">
+      <main className="flex-1 relative">
         {/* Background Gradients */}
         <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 py-8 md:py-12">
           {/* Top Bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-12">
             <div>
               <motion.h1
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-4xl md:text-5xl font-bold tracking-tight mb-2"
+                className="text-2xl md:text-5xl font-bold tracking-tight mb-1"
               >
                 {t('groups') || 'Communities'}
               </motion.h1>
-              <p className="text-gray-400 text-lg">
+              <p className="text-gray-400 text-sm md:text-lg">
                 {t('manageGroupsDesc') || 'Find your tribe and practice together.'}
               </p>
             </div>
@@ -112,7 +110,7 @@ const GroupsPage = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
                 <AnimatePresence>
                   {filteredGroups.map((group, index) => (
                     <motion.div
@@ -122,7 +120,8 @@ const GroupsPage = () => {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.05 }}
                       onClick={() => navigate(`/groups/${group.id}`)}
-                      className="group bg-[#141414] border border-white/5 rounded-[2.5rem] p-8 hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden"
+                      className="group bg-[#141414] border border-white/5 rounded-2xl md:rounded-[2.5rem] p-4 md:p-8 hover:border-primary/30 active:bg-[#1a1a1a] transition-all cursor-pointer relative overflow-hidden"
+                      style={{ touchAction: 'manipulation' }}
                     >
                       {/* Decorative Gradient */}
                       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />

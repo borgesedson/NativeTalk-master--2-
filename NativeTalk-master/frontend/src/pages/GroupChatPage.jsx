@@ -36,18 +36,18 @@ const GroupChannelHeader = ({ group, handleVideoCall, onAddMember, isUserAdmin, 
     const memberCount = Object.keys(channel.state.members).length;
 
     return (
-        <div className="h-28 flex items-center justify-between px-8 bg-black/40 backdrop-blur-3xl border-b border-white/5 relative z-50 overflow-hidden">
+        <div className="h-16 md:h-28 flex items-center justify-between px-4 md:px-8 bg-black/40 backdrop-blur-3xl border-b border-white/5 relative z-50 overflow-hidden">
             {/* Background Pulse */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 md:gap-6">
                 <button
                     onClick={onBack}
                     className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/5 active:scale-90"
                 >
                     <ArrowLeft className="size-5 text-gray-400" />
                 </button>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
                     <div className="relative group/avatar cursor-pointer">
                         <div className="size-14 rounded-2xl overflow-hidden bg-primary/10 border-2 border-white/5 p-0.5 shadow-2xl">
                             <img src={group?.avatar_url || channel.data?.image || "/group_placeholder.png"} alt={group?.name} className="w-full h-full object-cover rounded-xl group-hover/avatar:scale-110 transition-transform duration-500" />
@@ -55,7 +55,7 @@ const GroupChannelHeader = ({ group, handleVideoCall, onAddMember, isUserAdmin, 
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h3 className="text-xl font-black tracking-tight text-white uppercase">{group?.name || channel.data?.name}</h3>
+                            <h3 className="text-base md:text-xl font-black tracking-tight text-white uppercase truncate max-w-[120px] md:max-w-none">{group?.name || channel.data?.name}</h3>
                             <div className="bg-primary/10 border border-primary/20 px-2 py-0.5 rounded flex items-center gap-1.5 text-[8px] font-black text-primary uppercase tracking-widest">
                                 <Zap className="size-2.5 fill-primary" />
                                 ACTIVE TRIBE

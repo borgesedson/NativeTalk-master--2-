@@ -538,10 +538,12 @@ const ContactsSidebarContent = () => {
                 </button>
             )}
 
-            {/* Version & Debug Info (Visible to help troubleshooting) */}
-            <div className="fixed left-4 bottom-4 z-50 pointer-events-none opacity-30 text-[10px] text-white bg-black/50 px-2 py-1 rounded-md border border-white/5">
-                {BUILD_ID} | {isMobile ? 'MOBILE' : 'DESKTOP'} | {window.innerWidth}px
-            </div>
+            {/* Version & Debug Info (Dev only) */}
+            {import.meta.env.DEV && (
+                <div className="fixed left-4 bottom-4 z-50 pointer-events-none opacity-30 text-[10px] text-white bg-black/50 px-2 py-1 rounded-md border border-white/5">
+                    {BUILD_ID} | {isMobile ? 'MOBILE' : 'DESKTOP'} | {window.innerWidth}px
+                </div>
+            )}
 
             <div
                 className="flex-1 overflow-y-auto hide-scrollbar px-2 md:px-4 pb-6 min-h-[300px]"

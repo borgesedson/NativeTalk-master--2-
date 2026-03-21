@@ -82,7 +82,7 @@ const ContactsPage = () => {
 
         <div className="max-w-7xl mx-auto px-6 py-8 md:py-12">
           {/* Top Bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-12">
             <div>
               <motion.h1
                 initial={{ opacity: 0, x: -20 }}
@@ -109,7 +109,7 @@ const ContactsPage = () => {
           </div>
 
           {/* Tab Switcher */}
-          <div className="flex gap-2 mb-12 bg-white/5 p-1.5 rounded-[2rem] w-fit border border-white/5">
+          <div className="flex gap-2 mb-6 md:mb-12 bg-white/5 p-1.5 rounded-[2rem] w-fit border border-white/5">
             {[
               { id: 'partners', label: 'Meus Amigos', icon: Users },
               { id: 'discover', label: 'Descobrir', icon: Sparkles }
@@ -135,7 +135,7 @@ const ContactsPage = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8"
             >
               {activeTab === 'partners' ? (
                 loadingFriends ? (
@@ -178,7 +178,7 @@ const ContactsPage = () => {
 const PartnerCard = ({ user, onCall, onChat }) => (
   <motion.div
     whileHover={{ y: -5 }}
-    className="bg-[#141414] border border-white/5 rounded-[2.5rem] p-8 hover:border-primary/30 transition-all group relative overflow-hidden"
+    className="bg-[#141414] border border-white/5 rounded-2xl md:rounded-[2.5rem] p-4 md:p-8 hover:border-primary/30 transition-all group relative overflow-hidden"
   >
     {/* Status Glow */}
     <div className={`absolute top-0 right-0 w-32 h-32 blur-3xl opacity-10 rounded-full ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
@@ -225,15 +225,15 @@ const PeerCard = ({ user, onConnect }) => {
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
-      className="bg-[#141414] border border-white/5 rounded-[2.5rem] p-8 hover:border-accent-coral/30 transition-all group overflow-hidden relative"
+      className="bg-[#141414] border border-white/5 rounded-2xl md:rounded-[2.5rem] p-4 md:p-8 hover:border-accent-coral/30 transition-all group overflow-hidden relative"
     >
       {/* Decorative Brand Mark */}
       <div className="absolute top-[-10px] right-[-10px] size-24 bg-accent-coral/5 rounded-full blur-2xl group-hover:bg-accent-coral/10 transition-colors" />
 
-      <div className="flex items-center gap-6 mb-8 relative z-10">
+      <div className="flex items-center gap-4 mb-4 md:mb-8 relative z-10">
         <Avatar user={user} size="md" />
         <div className="min-w-0">
-          <h3 className="text-xl font-bold truncate mb-1">{user.name}</h3>
+          <h3 className="text-base md:text-xl font-bold truncate mb-1">{user.name}</h3>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded text-[10px] font-black text-gray-400 border border-white/5">
               <Globe className="size-3" />
@@ -244,7 +244,7 @@ const PeerCard = ({ user, onConnect }) => {
         </div>
       </div>
 
-      <div className="mb-10 min-h-[48px] relative z-10">
+      <div className="mb-4 md:mb-10 min-h-[36px] relative z-10">
         <p className="text-gray-500 text-sm italic leading-relaxed line-clamp-2">
           "{user.bio || 'Quer praticar idiomas e fazer amigos.'}"
         </p>

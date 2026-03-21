@@ -32,7 +32,7 @@ const BottomNav = () => {
                             key={item.path}
                             onClick={() => navigate(item.path)}
                             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${active ? 'text-primary' : 'text-slate-500'}`}
+                            className={`relative flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${active ? 'text-primary' : 'text-slate-500'}`}
                         >
                             <div className="relative">
                                 <span

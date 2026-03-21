@@ -315,7 +315,6 @@ const ChatPage = () => {
               <AudioRecorder onSendAudio={handleSendAudio} />
               <div className="wa-input-container">
                 <MessageInput
-                  focus
                   overrideSubmitHandler={async (message) => {
                     const originalText = message?.text?.trim() || '';
                     if (!originalText && !message.attachments?.length) return;

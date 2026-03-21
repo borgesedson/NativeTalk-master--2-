@@ -115,7 +115,7 @@ const MessagesPage = () => {
         {/* Background Gradients */}
         <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="max-w-5xl mx-auto px-6 py-8 md:py-12">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-12">
 
           {/* Header Section */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-16">
@@ -179,12 +179,13 @@ const MessagesPage = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
                       onClick={() => navigate(`/chat/${otherMember?.id}`)}
-                      className="group bg-[#141414] hover:bg-[#1a1a1a] p-6 rounded-[2.5rem] border border-white/5 hover:border-primary/40 transition-all cursor-pointer flex items-center gap-6 relative overflow-hidden shadow-xl"
+                      className="group bg-[#141414] active:bg-[#1a1a1a] p-4 md:p-6 rounded-2xl md:rounded-[2.5rem] border border-white/5 hover:border-primary/40 transition-all cursor-pointer flex items-center gap-3 md:gap-6 relative overflow-hidden shadow-xl"
+                      style={{ touchAction: 'manipulation' }}
                     >
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${unreadCount > 0 ? 'bg-primary' : 'bg-transparent'} group-hover:w-2 transition-all`} />
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${unreadCount > 0 ? 'bg-primary' : 'bg-transparent'} transition-all`} />
 
-                      <div className="relative">
-                        <div className="size-20 rounded-[1.75rem] overflow-hidden bg-white/5 ring-4 ring-white/[0.02]">
+                      <div className="relative shrink-0">
+                        <div className="size-14 md:size-20 rounded-2xl md:rounded-[1.75rem] overflow-hidden bg-white/5">
                           <img
                             src={otherMember?.image || '/avatar.png'}
                             alt={otherMember?.name}
@@ -192,49 +193,32 @@ const MessagesPage = () => {
                           />
                         </div>
                         {otherMember?.online && (
-                          <div className="absolute bottom-0 right-0 size-5 bg-green-500 border-[5px] border-[#141414] rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                          <div className="absolute bottom-0 right-0 size-3.5 md:size-5 bg-green-500 border-2 md:border-[5px] border-[#141414] rounded-full" />
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <h3 className="font-bold text-lg text-white group-hover:text-primary transition-colors">
-                              {otherMember?.name || 'Usuário'}
-                            </h3>
-                            <div className="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded text-[10px] font-black text-gray-500 uppercase tracking-tighter border border-white/5">
-                              <Globe className="size-3" />
-                              EN-DE
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <Clock className="size-3" />
-                            <span className="text-xs text-gray-600">
-                              {lastMessage?.created_at ? formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true }) : ''}
-                            </span>
-                          </div>
+                        <div className="flex items-center justify-between mb-1 md:mb-2">
+                          <h3 className="font-bold text-base md:text-lg text-white truncate group-hover:text-primary transition-colors">
+                            {otherMember?.name || 'Usuário'}
+                          </h3>
+                          <span className="text-xs text-gray-600 shrink-0 ml-2">
+                            {lastMessage?.created_at ? formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true }) : ''}
+                          </span>
                         </div>
 
-                        <div className="flex items-center justify-between gap-8">
-                          <p className={`text-sm truncate leading-relaxed ${unreadCount > 0 ? 'text-primary font-black' : 'text-gray-500 font-medium'}`}>
-                            {unreadCount > 0 && <span className="inline-block size-2 bg-primary rounded-full mr-2 shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />}
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={`text-sm truncate leading-relaxed ${unreadCount > 0 ? 'text-primary font-bold' : 'text-gray-500'}`}>
                             {lastMessage?.text || 'Nenhuma mensagem ainda.'}
                           </p>
                           {unreadCount > 0 && (
                             <motion.span
                               initial={{ scale: 0 }} animate={{ scale: 1 }}
-                              className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-xl shadow-xl shadow-primary/30 flex items-center justify-center min-w-[28px]"
+                              className="bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full shrink-0 min-w-[20px] text-center"
                             >
                               {unreadCount}
                             </motion.span>
                           )}
-                        </div>
-                      </div>
-
-                      {/* Hover Action */}
-                      <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                        <div className="size-12 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/20">
-                          <Zap className="size-6 fill-white" />
                         </div>
                       </div>
                     </motion.div>
@@ -245,7 +229,7 @@ const MessagesPage = () => {
           </div>
 
           {/* Bottom Insight */}
-          <div className="mt-16 bg-white/5 rounded-[2.5rem] p-8 border border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
+          <div className="mt-8 md:mt-16 bg-white/5 rounded-2xl md:rounded-[2.5rem] p-5 md:p-8 border border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
             <div className="flex items-center gap-4">
               <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
