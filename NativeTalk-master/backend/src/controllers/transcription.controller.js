@@ -29,29 +29,53 @@ export async function transcribeAudioMessage(req, res) {
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `);
 
-    // Usar transcrição do frontend (Web Speech API) ou transcrever via Azure
+    // Usar transcrição do frontend (Web Speech API) ou transcrever via AI
     let originalTranscription = transcription || '';
 
-    // Se não há transcrição do frontend, tentar transcrever via Azure Speech
+    // Se não há transcrição do frontend, tentar transcrever via AI
     if (!transcription || transcription.startsWith('🎤')) {
-      if (audioData && process.env.AZURE_SPEECH_KEY && process.env.AZURE_SPEECH_KEY !== 'SUA_CHAVE_1_AQUI') {
-        console.log(`🎤 Sem transcrição. Tentando Azure Speech em ${senderLangCode}...`);
+      const base64Data = audioData.includes(',') ? audioData.split(',')[1] : audioData;
+
+      // 1. Tentar Azure Speech (se configurado)
+      if (process.env.AZURE_SPEECH_KEY && process.env.AZURE_SPEECH_KEY !== 'SUA_CHAVE_1_AQUI') {
+        console.log(`🎤 Tentando Azure Speech em ${senderLangCode}...`);
         try {
-          const base64Data = audioData.includes(',') ? audioData.split(',')[1] : audioData;
           const audioBuffer = Buffer.from(base64Data, 'base64');
           const speechLangCode = getSpeechLanguageCode(senderLangCode);
           originalTranscription = await transcribeAudio(audioBuffer, speechLangCode);
           console.log(`✅ Azure Speech result: "${originalTranscription}"`);
         } catch (error) {
           console.error('❌ Erro Azure:', error.message);
-          originalTranscription = transcription || '🎤 Mensagem de áudio';
         }
-      } else if (audioData) {
-        // Se temos áudio mas não Azure, talvez devêssemos usar o Whisper VPS?
-        // O Whisper VPS está mapeado em server.js em /api/stt
-        console.warn('⚠️  Azure Speech não configurado. Use /api/stt para Whisper.');
-        originalTranscription = transcription || '🎤 Mensagem de áudio';
-      } else {
+      } 
+      
+      // 2. Se Azure falhou ou não está configurado, tentar Whisper VPS (Local)
+      if (!originalTranscription || originalTranscription.startsWith('🎤')) {
+        const whisperUrl = process.env.WHISPER_API_URL || 'http://127.0.0.1:5001/stt-and-translate';
+        console.log(`🎤 Tentando Whisper VPS em ${whisperUrl}...`);
+        try {
+          const response = await fetch(whisperUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              audio: base64Data,
+              from: senderLangCode,
+              to: receiverLangCode 
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            originalTranscription = data.transcript || data.text || '';
+            console.log(`✅ Whisper VPS result: "${originalTranscription}"`);
+          }
+        } catch (error) {
+          console.error('❌ Erro Whisper VPS:', error.message);
+        }
+      }
+
+      // 3. Fallback final se tudo falhar
+      if (!originalTranscription) {
         originalTranscription = transcription || '🎤 Mensagem de áudio';
       }
     }

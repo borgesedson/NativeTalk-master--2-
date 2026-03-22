@@ -25,7 +25,16 @@ git fetch origin
 # Try main first, fallback to master
 git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || echo "Using existing code"
 
-cd NativeTalk-master/backend
+cd NativeTalk-master
+
+echo "--- BUILDING FRONTEND ---"
+cd frontend
+npm install
+npm run build
+echo "Frontend built successfully."
+
+echo "--- CONFIGURING BACKEND ---"
+cd ../backend
 
 echo "Installing backend dependencies..."
 npm install

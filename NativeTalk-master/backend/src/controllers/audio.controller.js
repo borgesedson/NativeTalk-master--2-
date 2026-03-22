@@ -26,8 +26,8 @@ export async function uploadAudio(req, res) {
     const uniqueName = `${Date.now()}-${fileName || 'audio.webm'}`;
     const filePath = path.join(uploadsDir, uniqueName);
 
-    // Extrair base64 puro (remover prefixo data:audio/webm;base64,)
-    const base64Data = audioData.replace(/^data:audio\/\w+;base64,/, '');
+    // Extrair base64 puro (remover qualquer prefixo data:audio/...;base64,)
+    const base64Data = audioData.includes(',') ? audioData.split(',')[1] : audioData;
     const buffer = Buffer.from(base64Data, 'base64');
 
     // Salvar arquivo de forma síncrona (mais rápido para arquivos pequenos)
