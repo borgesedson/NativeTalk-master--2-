@@ -25,8 +25,7 @@ git fetch origin
 # Try main first, fallback to master
 git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || echo "Using existing code"
 
-cd NativeTalk-master/backend
-
+cd /var/www/nativetalk/NativeTalk-master/backend
 echo "Installing backend dependencies..."
 npm install
 
@@ -51,6 +50,13 @@ pm2 delete nativetalk-backend 2>/dev/null || true
 pm2 start src/server.js --name nativetalk-backend
 pm2 save
 
+echo "--- FRONTEND BUILD ---"
+cd /var/www/nativetalk/NativeTalk-master/frontend
+echo "Installing frontend dependencies..."
+npm install
+echo "Building frontend..."
+npm run build
+
 # Nginx Configuration
 echo "Configuring Nginx..."
 mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
@@ -58,7 +64,13 @@ mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
 cat <<NGINX > /etc/nginx/sites-available/nativetalk
 server {
     listen 80;
-    server_name 82.25.64.9;
+    server_name 82.25.64.9 nativetalk.duckdns.org;
+
+    location / {
+        root /var/www/nativetalk/NativeTalk-master/frontend/dist;
+        index index.html;
+        try_files \$uri \$uri/ /index.html;
+    }
 
     location /api {
         proxy_pass http://localhost:3000;
