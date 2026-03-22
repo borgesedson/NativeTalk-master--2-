@@ -8,8 +8,8 @@ const DesktopChatLayout = ({
     return (
         <div className="flex h-[100dvh] w-full bg-background-dark text-slate-100 overflow-hidden font-display">
 
-            {/* 1. Navigation Sidebar (Left - 80px) - Visible on Tablet/Desktop (md+) */}
-            <div className="w-[80px] shrink-0 bg-[#0A1A2F] flex-col items-center py-6 hidden md:flex border-r border-[#1E2A3A] z-20 shadow-xl backdrop-blur-md">
+            {/* 1. Navigation Sidebar (Left - 80px) - Always visible to match user request */}
+            <div className="w-[72px] shrink-0 bg-[#0A1A2F] flex flex-col items-center py-6 border-r border-[#1E2A3A] z-20 shadow-xl backdrop-blur-md">
                 {navigationSidebar}
             </div>
 
