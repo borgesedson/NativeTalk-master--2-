@@ -1,0 +1,166 @@
+﻿node.exe : 2026-03-09T23:41:51Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is 
+a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, 
+are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare 
+reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in 
+production you should use a pre-created named tunnel by following: 
+https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+No C:\Users\Cunae\AppData\Roaming\npm\cloudflared.ps1:24 caractere:5
++     & "node$exe"  "$basedir/node_modules/cloudflared/lib/cloudflared. ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-03-09T23:4...ns/connect-apps:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-03-09T23:41:51Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-03-09T23:41:56Z INF +--------------------------------------------------------------------------------------------+
+2026-03-09T23:41:56Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-03-09T23:41:56Z INF |  https://cooked-tokyo-guardian-abc.trycloudflare.com                                       |
+2026-03-09T23:41:56Z INF +--------------------------------------------------------------------------------------------+
+2026-03-09T23:41:56Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in 
+[~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp]
+2026-03-09T23:41:56Z INF Version 2026.3.0 (Checksum 59b12880b24af581cf5b1013db601c7d843b9b097e9c78aa5957c7f39f741885)
+2026-03-09T23:41:56Z INF GOOS: windows, GOVersion: go1.24.13, GoArch: amd64
+2026-03-09T23:41:56Z INF Settings: map[ha-connections:1 protocol:quic url:http://localhost:5173]
+2026-03-09T23:41:56Z INF cloudflared will not automatically update on Windows systems.
+2026-03-09T23:41:56Z INF Generated Connector ID: 3de3d92c-a437-4f9e-9752-4ac237714a2f
+2026-03-09T23:41:56Z INF Initial protocol quic
+2026-03-09T23:41:56Z INF ICMP proxy will use 192.168.1.2 as source for IPv4
+2026-03-09T23:41:56Z INF ICMP proxy will use fe80::3730:2ab:26d5:9069 in zone Wi-Fi as source for IPv6
+2026-03-09T23:41:56Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use 
+--origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-03-09T23:41:56Z INF ICMP proxy will use 192.168.1.2 as source for IPv4
+2026-03-09T23:41:56Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveP256] connIndex=0 event=0 
+ip=198.41.200.33
+2026-03-09T23:41:56Z INF ICMP proxy will use fe80::3730:2ab:26d5:9069 in zone Wi-Fi as source for IPv6
+2026-03-09T23:41:56Z INF Starting metrics server on 127.0.0.1:20241/metrics
+2026-03-09T23:41:57Z INF Registered tunnel connection connIndex=0 connection=154b057e-4fd7-4f69-97ac-588d43b8a670 
+event=0 ip=198.41.200.33 location=gru18 protocol=quic
+2026/03/09 20:45:32 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:45:32 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:45:32 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:45:32 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:45:32 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:45:32 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:45:32 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:45:32 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:45:32 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026-03-09T23:47:01Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-09T23:54:42Z ERR failed to run the datagram handler error="write udp [::]:53105->198.41.200.33:7844: 
+wsasendto: Uma operação de soquete foi tentada em uma rede inacessível." connIndex=0 event=0 ip=198.41.200.33
+2026-03-09T23:54:42Z ERR failed to accept incoming stream requests error="failed to accept QUIC stream: write udp 
+[::]:53105->198.41.200.33:7844: wsasendto: Uma operação de soquete foi tentada em uma rede inacessível." connIndex=0 
+event=0 ip=198.41.200.33
+2026-03-09T23:54:42Z ERR failed to serve tunnel connection error="datagram manager encountered a failure while 
+serving" connIndex=0 event=0 ip=198.41.200.33
+2026-03-09T23:54:42Z ERR Serve tunnel error error="datagram manager encountered a failure while serving" connIndex=0 
+event=0 ip=198.41.200.33
+2026-03-09T23:54:42Z INF Retrying connection in up to 1s connIndex=0 event=0 ip=198.41.200.33
+2026-03-09T23:54:44Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveP256] connIndex=0 event=0 
+ip=198.41.200.33
+2026-03-09T23:54:45Z INF Registered tunnel connection connIndex=0 connection=0e290c36-0f35-4c3e-a49e-cbb6c82820f7 
+event=0 ip=198.41.200.33 location=gru18 protocol=quic
+2026-03-09T23:54:46Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026/03/09 20:56:11 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:56:11 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:58:11 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:58:11 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:58:11 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:58:11 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 20:58:11 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026-03-09T23:59:51Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T00:04:56Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T00:10:02Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T00:15:07Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026/03/09 21:15:42 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:15:42 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:15:42 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:18:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:18:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:18:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026-03-10T00:20:12Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026/03/09 21:27:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026-03-10T00:30:17Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T00:35:22Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026/03/09 21:36:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:36:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:36:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:36:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026-03-10T00:40:27Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T00:45:32Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026/03/09 21:47:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:47:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:47:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:47:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:47:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:47:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026-03-10T00:50:37Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026/03/09 21:52:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:52:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:52:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:52:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:52:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026-03-10T00:55:42Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026/03/09 21:57:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:57:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 21:57:12 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026-03-10T01:05:48Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T01:10:53Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T01:15:58Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T01:21:03Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T01:26:08Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T01:31:13Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026/03/09 22:32:13 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 22:32:13 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026/03/09 22:32:13 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad 
+Request\r\n\r\n"; err=<nil>
+2026-03-10T01:36:18Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T01:41:23Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T01:46:28Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T01:51:33Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T01:56:38Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T02:01:43Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T02:06:49Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T02:11:54Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"
+2026-03-10T02:16:59Z ERR Failed to refresh DNS local resolver error="lookup region1.v2.argotunnel.com: i/o timeout"

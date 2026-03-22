@@ -663,7 +663,7 @@ export const getStreamToken = async () => {
     
     if (!session?.accessToken) throw new Error('No active session token');
 
-    const response = await fetch(`${API_BASE_URL}/api/chat/token`, {
+    const response = await fetch(`${API_BASE_URL}/chat/token`, {
       headers: {
         'Authorization': `Bearer ${session.accessToken}`
       }
@@ -734,7 +734,7 @@ export const translateMessage = async (text, targetUserId, forcedTargetLang = nu
     if (navigator.onLine) {
       try {
         console.log(`[API] Translation proxy call: ${sourceLang} -> ${targetLang}`);
-        const response = await fetch(`${API_BASE_URL}/api/translate`, {
+        const response = await fetch(`${API_BASE_URL}/translate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -824,7 +824,7 @@ export const transcribeAudio = async (audioData, senderUserId, receiverUserId, t
       }
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/transcription/transcribe`, {
+    const response = await fetch(`${API_BASE_URL}/transcription/transcribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
