@@ -20,7 +20,7 @@ const BottomNav = () => {
 
     return (
         <nav
-            className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 border-t border-white/10 backdrop-blur-xl shadow-2xl"
+            className="md:hidden bg-slate-900/90 border-t border-white/5 backdrop-blur-2xl shadow-[0_-8px_30px_rgb(0,0,0,0.4)]"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}
         >
             <div className="flex items-center justify-around w-full h-16">

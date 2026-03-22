@@ -23,7 +23,7 @@ import toast from 'react-hot-toast';
 import { uploadAudio, transcribeAudio } from '../../lib/api';
 import Logo from '../Logo';
 
-const BUILD_ID = 'v2.5.2-FINAL'; // Mobile Sidebar UI fix
+const BUILD_ID = 'v2.6.0-PWA-PRO'; // PWA BottomNav & Mobile Layout
 console.log('🚀 NativeTalk Build Active:', BUILD_ID);
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
@@ -1716,7 +1716,6 @@ const StitchChat = () => {
                 {isMobile ? (
                     <MobileChatLayout
                         isChatOpen={isMobileChatOpen}
-                        navigationSidebar={navigationSidebar}
                         contactsSidebar={contactsSidebar}
                         mainChatArea={mainChatArea}
                     />

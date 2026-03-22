@@ -34,7 +34,7 @@ const NavigationHandler = () => {
   const isAuth = ['/', '/login', '/register', '/onboarding', '/profile-setup'].includes(location.pathname);
   const isDashboard = location.pathname === '/dashboard';
 
-  if (isChat || isAuth || isDashboard) return null;
+  if (isChat || isAuth) return null;
   return <BottomNav />;
 };
 
@@ -103,41 +103,43 @@ const App = () => {
               }}
             />
 
-            <Routes>
-              {/* Rotas públicas */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<SignUpPage />} />
-              <Route path="/signup" element={<Navigate to="/register" replace />} />
-              <Route path="/stitch-demo" element={<StitchDemoPage />} />
+            <main className="flex-1 overflow-hidden flex flex-col relative">
+                <Routes>
+                  {/* Rotas públicas */}
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<SignUpPage />} />
+                  <Route path="/signup" element={<Navigate to="/register" replace />} />
+                  <Route path="/stitch-demo" element={<StitchDemoPage />} />
 
-              {/* Fluxo de integração/setup */}
-              <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-              <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetupPage /></ProtectedRoute>} />
+                  {/* Fluxo de integração/setup */}
+                  <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+                  <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetupPage /></ProtectedRoute>} />
 
-              {/* Rotas principais protegidas */}
-              <Route path="/dashboard" element={<ProtectedRoute><StitchDemoPage /></ProtectedRoute>} />
-              <Route path="/home" element={<Navigate to="/dashboard" replace />} />
+                  {/* Rotas principais protegidas */}
+                  <Route path="/dashboard" element={<ProtectedRoute><StitchDemoPage /></ProtectedRoute>} />
+                  <Route path="/home" element={<Navigate to="/dashboard" replace />} />
 
-              <Route path="/messages" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
-              <Route path="/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-              <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
-              <Route path="/groups/:id" element={<ProtectedRoute><GroupChatPage /></ProtectedRoute>} />
+                  <Route path="/messages" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
+                  <Route path="/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                  <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
+                  <Route path="/groups/:id" element={<ProtectedRoute><GroupChatPage /></ProtectedRoute>} />
 
 
-              <Route path="/call/:callId?" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
-              <Route path="/call/video/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
-              <Route path="/call/voice/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
-              <Route path="/group-call/:groupId" element={<ProtectedRoute><GroupCallPage /></ProtectedRoute>} />
+                  <Route path="/call/:callId?" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
+                  <Route path="/call/video/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
+                  <Route path="/call/voice/:callId" element={<ProtectedRoute><CallPage /></ProtectedRoute>} />
+                  <Route path="/group-call/:groupId" element={<ProtectedRoute><GroupCallPage /></ProtectedRoute>} />
 
-              <Route path="/contacts" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
-              <Route path="/history" element={<ProtectedRoute><CallHistoryPage /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                  <Route path="/contacts" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
+                  <Route path="/history" element={<ProtectedRoute><CallHistoryPage /></ProtectedRoute>} />
+                  <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+                  {/* Fallback */}
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+            </main>
 
             <NavigationHandler />
 
