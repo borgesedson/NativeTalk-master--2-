@@ -30,6 +30,17 @@ cd NativeTalk-master
 echo "--- BUILDING FRONTEND ---"
 cd frontend
 npm install
+
+echo "Configuring frontend environment variables..."
+cat <<ENV > .env
+VITE_STREAM_API_KEY=qqq782vgbvwx
+VITE_INSFORGE_BASE_URL=https://7qi47s5n.us-west.insforge.app
+VITE_INSFORGE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OC0xMjM0LTU2NzgtOTBhYi1jZGVmMTIzNDU2NzgiLCJlbWFpbCI6ImFub25AaW5zZm9yZ2UuY29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzOTg2NTR9.zAvcnN8b1pR-TEJPOVFHxmLpXUwVXOkhyL1BMmG_s5k
+VITE_ARGOS_API_URL=/api/translate
+VITE_API_URL=/api
+VITE_SERVER_URL=
+ENV
+
 npm run build
 echo "Frontend built successfully."
 
