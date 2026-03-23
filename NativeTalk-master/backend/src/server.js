@@ -258,81 +258,34 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 🌐 PROXY TRADUÇÃO (ARGOS VPS)
+// 🌐 PROXY TRADUÇÃO (Unificado com DeepL/MyMemory)
 app.post('/api/translate', async (req, res) => {
   try {
     const { text, from, to } = req.body;
-    console.log(`[SERVER TRANSLATE] from: ${from} | to: ${to} | text: ${text?.substring(0, 30)}`);
+    console.log(`[SERVER TRANSLATE] request: "${text?.substring(0, 30)}..." | from: ${from} | to: ${to}`);
 
-    // VPS expects: text, from, to (NOT source/target!)
-    const vpsPayload = { text, from, to };
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
-
-    const argosUrl = process.env.VITE_ARGOS_API_URL || 'http://127.0.0.1:5000/translate';
-    const response = await fetch(argosUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(vpsPayload),
-      signal: controller.signal
-    });
-
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`[SERVER TRANSLATE] VPS error (${response.status}):`, errText);
-      return res.status(response.status).json({ error: 'Argos VPS returned an error', details: errText });
+    if (!text) {
+      return res.status(400).json({ error: 'Text is required' });
     }
 
-    const data = await response.json();
-    console.log(`[SERVER TRANSLATE] VPS result: "${data.translated?.substring(0, 40)}"`);
+    // Usar a mesma lógica robusta do Socket.io (DeepL -> MyMemory -> Original)
+    const translatedText = await translateText(text, from || 'auto', to || 'en');
+    
+    // Calcular confiança simples baseada na diferença se for possível
+    const confidence = (translatedText === text) ? 0 : 95;
 
-    const translated = data.translated || text;
-
-    // Confidence helper
-    const editDistance = (s1, s2) => {
-      s1 = s1.toLowerCase();
-      s2 = s2.toLowerCase();
-      let costs = new Array();
-      for (let i = 0; i <= s1.length; i++) {
-        let lastValue = i;
-        for (let j = 0; j <= s2.length; j++) {
-          if (i == 0) costs[j] = j;
-          else {
-            if (j > 0) {
-              let newValue = costs[j - 1];
-              if (s1.charAt(i - 1) != s2.charAt(j - 1))
-                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-              costs[j - 1] = lastValue;
-              lastValue = newValue;
-            }
-          }
-        }
-        if (i > 0) costs[s2.length] = lastValue;
-      }
-      return costs[s2.length];
-    }
-
-    const similarity = (a, b) => {
-      if (!a || !b) return 0
-      const longer = a.length > b.length ? a : b
-      const shorter = a.length > b.length ? b : a
-      if (longer.length === 0) return 1.0
-      return (longer.length - editDistance(longer, shorter)) / longer.length
-    }
-
-    const confidence = 1 - similarity(text, translated);
+    console.log(`[SERVER TRANSLATE] result: "${translatedText.substring(0, 40)}..." | Confidence: ${confidence}%`);
 
     res.json({
-      translated: translated,
-      translatedText: translated,
-      confidence: Math.round(confidence * 100)
+      translated: translatedText,
+      translatedText: translatedText,
+      confidence: confidence,
+      from: from || 'auto',
+      to: to || 'en'
     });
   } catch (error) {
-    console.error('[API Proxy] Error:', error.message);
-    res.status(500).json({ error: 'Internal server error in translation proxy' });
+    console.error('[SERVER TRANSLATE] Error:', error.message);
+    res.status(500).json({ error: 'Internal server error in translation service' });
   }
 });
 
