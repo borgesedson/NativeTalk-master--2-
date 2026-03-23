@@ -1406,7 +1406,6 @@ const StitchChat = () => {
     const handleTranslate = React.useCallback(async (message) => {
         if (!message || message.user?.id === user?.id) return;
 
-        // Composite key: messageId-readerId (isolated per user)
         const cacheKey = `${message.id}-${user?.id}`;
         if (translatingRef.current.has(cacheKey)) return;
 
@@ -1418,50 +1417,28 @@ const StitchChat = () => {
         );
         const readerLang = getLanguageCode(user?.native_language || 'en');
 
-        console.log(`[Translation] ${senderLang}→${readerLang} | "${message.text?.substring(0, 30)}" | key: ${cacheKey}`);
-
         if (senderLang === readerLang) return;
 
         translatingRef.current.add(cacheKey);
         try {
-            let translatedText = null;
-
-            // 1. TENTAR TRADUÇÃO LOCAL (transformers.js) - PRIORIDADE
-            try {
-                const { default: translationEngine } = await import('../../lib/translationEngine');
-                translatedText = await translationEngine.translate(message.text, senderLang, readerLang);
-                if (translatedText) {
-                    console.log(`[Translation] LOCAL SUCCESS (${senderLang}→${readerLang}): "${translatedText.substring(0, 30)}..."`);
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+            const response = await fetch(`${API_BASE_URL}/translate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: message.text, from: senderLang, to: readerLang })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const translatedText = data.translated || data.translatedText;
+                if (translatedText && translatedText !== message.text) {
+                    setTranslations(prev => {
+                        if (prev[cacheKey]) return prev;
+                        return { ...prev, [cacheKey]: { translatedText, translation: { text: translatedText, language: readerLang } } };
+                    });
                 }
-            } catch (localErr) {
-                console.warn('[Translation] Local engine fail/loading:', localErr.message);
-            }
-
-            // 2. FALLBACK PARA O BACKEND (Argos/DeepL)
-            if (!translatedText) {
-                console.log(`[Translation] FALLBACK to server...`);
-                const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-                const response = await fetch(`${API_BASE_URL}/translate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: message.text, from: senderLang, to: readerLang })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    translatedText = data.translated || data.translatedText;
-                    console.log(`[Translation] SERVER SUCCESS: "${translatedText?.substring(0, 30)}..."`);
-                }
-            }
-
-            if (translatedText && translatedText !== message.text) {
-                setTranslations(prev => {
-                    if (prev[cacheKey]) return prev;
-                    return { ...prev, [cacheKey]: { translatedText, translation: { text: translatedText, language: readerLang } } };
-                });
             }
         } catch (e) {
-            console.error(`[Translation] CRITICAL FAIL for ${cacheKey}:`, e);
+            console.warn(`[Translation] Server request failed for ${cacheKey}:`, e.message);
         } finally {
             translatingRef.current.delete(cacheKey);
         }
@@ -1511,16 +1488,8 @@ const StitchChat = () => {
                     if (event.message) handleTranslate(event.message);
                 });
 
-                // Init Stream Video
-                const vClient = new StreamVideoClient({
-                    apiKey: STREAM_API_KEY,
-                    user: { id: userId, name: user.name, image: getAvatarUrl(user.url, user.name) },
-                    token: tokenString
-                });
-
                 if (!cleanup) {
                     setChatClient(client);
-                    setVideoClient(vClient);
                     setLoading(false);
                 }
             } catch (err) {
@@ -1676,8 +1645,7 @@ const StitchChat = () => {
     }
 
     return (
-        <StreamVideo client={videoClient}>
-            <Chat client={chatClient} theme="str-chat__theme-dark">
+        <Chat client={chatClient} theme="str-chat__theme-dark">
                 {/* 1. Overlays for call screens */}
                 {callScreen === 'incoming' && incomingCall && caller && (
                     <IncomingCallScreen
@@ -1753,8 +1721,7 @@ const StitchChat = () => {
                         mainChatArea={mainChatArea}
                     />
                 )}
-            </Chat>
-        </StreamVideo>
+        </Chat>
     );
 };
 

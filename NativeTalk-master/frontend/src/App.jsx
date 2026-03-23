@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router';
 import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -12,7 +12,6 @@ import PWAManager from './components/PWAManager';
 import CallManager from './contexts/CallManager';
 import BottomNav from './components/BottomNav';
 import { useLocation } from 'react-router';
-import { translationEngine } from './lib/translationEngine';
 
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('./pages/HomePage'));
@@ -77,14 +76,6 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const App = () => {
-  useEffect(() => {
-    // 🚦 Defer background downloads to avoid saturating network/CPU on startup
-    const timer = setTimeout(() => {
-      translationEngine.startBackgroundDownload();
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <AuthProvider>
