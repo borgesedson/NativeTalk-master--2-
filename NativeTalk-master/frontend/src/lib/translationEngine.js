@@ -115,33 +115,44 @@ class TranslationEngine {
         }
     }
 
-    async startBackgroundDownload() {
-        console.log('[TranslationEngine] Iniciando download em segundo plano sequencial para idiomas prioritários...');
+    async startBackgroundDownload(userLanguage = 'pt') {
+        console.log(`[TranslationEngine] Iniciando download inteligente para idioma prioritário: ${userLanguage}`);
         
-        const priorityPairs = [
-            { from: 'en', to: 'pt' },
-            { from: 'pt', to: 'en' },
-            { from: 'en', to: 'es' },
-            { from: 'en', to: 'fr' },
-            { from: 'en', to: 'it' }
-        ];
+        // Apenas o par principal do usuário + inglês para evitar sobrecarga
+        const priorityPairs = [];
+        const lang = getLanguageCode(userLanguage);
+        
+        if (lang !== 'en') {
+            priorityPairs.push({ from: 'en', to: lang });
+            priorityPairs.push({ from: lang, to: 'en' });
+        } else {
+            // Se for inglês, baixa apenas um par comum como teste/cache
+            priorityPairs.push({ from: 'en', to: 'pt' });
+            priorityPairs.push({ from: 'pt', to: 'en' });
+        }
 
         for (const pair of priorityPairs) {
             try {
-                // Check if already loaded to avoid redundant logs
                 const key = `${pair.from}-${pair.to}`;
                 if (this.pipelines[key]) continue;
 
                 console.log(`[TranslationEngine] Background download: ${pair.from}-${pair.to}`);
                 await this.getPipeline(pair.from, pair.to);
                 
-                // Wait 2 seconds between models to allow main thread to breathe
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Espera 5 segundos entre modelos para não matar a CPU
+                await new Promise(resolve => setTimeout(resolve, 5000));
             } catch (err) {
                 console.error(`[TranslationEngine] Falha no download em background para ${pair.from}-${pair.to}:`, err);
             }
         }
-        console.log('[TranslationEngine] Todos os downloads prioritários concluídos ou em cache.');
+        console.log('[TranslationEngine] Downloads prioritários finalizados.');
+    }
+
+    // Helper interno se não estiver importado
+    _getLanguageCode(lang) {
+        if (!lang) return 'en';
+        if (lang.includes('-')) return lang.split('-')[0].toLowerCase();
+        return lang.toLowerCase();
     }
 
     async getSTTPipeline() {

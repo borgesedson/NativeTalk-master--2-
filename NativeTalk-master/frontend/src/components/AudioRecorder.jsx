@@ -49,8 +49,14 @@ const AudioRecorder = ({ onSendAudio, disabled }) => {
   const startRecording = async () => {
     if (disabled) return;
     
+    console.log('[Security Diagnostic] isSecureContext:', window.isSecureContext);
+    console.log('[Security Diagnostic] location.protocol:', window.location.protocol);
+    console.log('[Security Diagnostic] mediaDevices:', !!navigator.mediaDevices);
+
     if (!navigator.mediaDevices || !window.isSecureContext) {
-      toast.error('Gravação de áudio requer conexão segura HTTPS.');
+      const reason = !window.isSecureContext ? 'Conexão NÃO é segura (requer HTTPS)' : 'API mediaDevices indisponível';
+      console.error('[Audio] Bloqueado:', reason);
+      toast.error(`Gravação de áudio bloqueada: ${reason}. Use https:// e verifique o cadeado no navegador.`);
       return;
     }
 
