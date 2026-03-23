@@ -1,7 +1,7 @@
-// Configuração de provedores
-const TRANSLATION_PROVIDER = process.env.TRANSLATION_PROVIDER || 'deepl'; // deepl | mymemory
+const TRANSLATION_PROVIDER = process.env.TRANSLATION_PROVIDER || 'argos'; // argos | deepl | mymemory
 const DEEPL_API_KEY = process.env.DEEPL_API_KEY;
 const DEEPL_ENDPOINT = 'https://api-free.deepl.com/v2/translate';
+const ARGOS_ENDPOINT = process.env.ARGOS_API_URL || 'http://127.0.0.1:5000/translate';
 
 // ============================================
 // SISTEMA DE CACHE DE TRADUÇÕES
@@ -214,6 +214,38 @@ async function translateWithMyMemory(text, source, target) {
   }
 }
 
+// Provedor Argos Translate (Local VPS)
+async function translateWithArgos(text, source, target) {
+  try {
+    console.log(`🔵 Tentando Argos: ${source} → ${target} em ${ARGOS_ENDPOINT}`);
+    const response = await fetch(ARGOS_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q: text,
+        source: source,
+        target: target
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`Argos status ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const translated = data?.translatedText || data?.translated;
+    if (translated) {
+      console.log(`✅ Argos traduziu: "${text.substring(0, 30)}..." -> "${translated.substring(0, 30)}..."`);
+      return translated;
+    }
+    return null;
+  } catch (e) {
+    console.warn('Argos error:', e.message);
+    return null;
+  }
+}
+
 /**
  * Traduz um texto do idioma de origem para o idioma de destino
  * Usa a API pública do LibreTranslate (sem necessidade de API key)
@@ -260,28 +292,39 @@ export async function translateText(text, sourceLanguage, targetLanguage) {
     format: 'text'
   });
 
-  // Estratégia: Provedor primário (DeepL) → Fallback (MyMemory)
+  // Estratégia: Provedor configurado → Fallback (MyMemory)
   try {
     let translated = null;
 
-    // 2. Tentar DeepL primeiro (se configurado)
-    if (TRANSLATION_PROVIDER === 'deepl') {
+    // 2. Tentar Provedor Principal (Argos ou DeepL)
+    if (TRANSLATION_PROVIDER === 'argos') {
+      translated = await translateWithArgos(text, sourceLanguage, targetLanguage);
+    } else if (TRANSLATION_PROVIDER === 'deepl') {
       console.log(`🔵 Tentando DeepL: ${sourceLanguage} → ${targetLanguage}`);
       translated = await translateWithDeepL(text, sourceLanguage, targetLanguage);
-      if (translated) {
-        // Salvar no cache antes de retornar
-        saveToCache(text, sourceLanguage, targetLanguage, translated);
-        return translated;
-      }
     }
 
-    // 3. Fallback para MyMemory
+    if (translated) {
+      saveToCache(text, sourceLanguage, targetLanguage, translated);
+      return translated;
+    }
+
+    // 3. Fallback para MyMemory (se o principal falhar)
     console.log(`🌐 Tentando MyMemory como fallback...`);
     translated = await translateWithMyMemory(text, sourceLanguage, targetLanguage);
     if (translated) {
-      // Salvar no cache antes de retornar
       saveToCache(text, sourceLanguage, targetLanguage, translated);
       return translated;
+    }
+
+    // 4. Fallback final para Argos (se não for o principal e configurado)
+    if (TRANSLATION_PROVIDER !== 'argos') {
+        console.log(`🌐 Tentando Argos como último recurso...`);
+        translated = await translateWithArgos(text, sourceLanguage, targetLanguage);
+        if (translated) {
+            saveToCache(text, sourceLanguage, targetLanguage, translated);
+            return translated;
+        }
     }
 
     // 4. Se tudo falhar, retorna texto original

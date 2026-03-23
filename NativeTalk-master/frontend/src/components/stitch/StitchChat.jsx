@@ -1424,26 +1424,44 @@ const StitchChat = () => {
 
         translatingRef.current.add(cacheKey);
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-            const response = await fetch(`${API_BASE_URL}/translate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: message.text, from: senderLang, to: readerLang })
-            });
-            const data = await response.json();
-            console.log(`[Translation RESULT] status=${response.status} | raw:`, JSON.stringify(data));
-            if (response.ok) {
-                const translatedText = data.translated || data.translatedText || message.text;
-                console.log(`[Translation RESULT] original="${message.text?.substring(0, 30)}" → translated="${translatedText?.substring(0, 30)}" | same=${translatedText === message.text}`);
-                if (translatedText && translatedText !== message.text) {
-                    setTranslations(prev => {
-                        if (prev[cacheKey]) return prev;
-                        return { ...prev, [cacheKey]: { translatedText, translation: { text: translatedText, language: readerLang } } };
-                    });
+            let translatedText = null;
+
+            // 1. TENTAR TRADUÇÃO LOCAL (transformers.js) - PRIORIDADE
+            try {
+                const { default: translationEngine } = await import('../../lib/translationEngine');
+                translatedText = await translationEngine.translate(message.text, senderLang, readerLang);
+                if (translatedText) {
+                    console.log(`[Translation] LOCAL SUCCESS (${senderLang}→${readerLang}): "${translatedText.substring(0, 30)}..."`);
+                }
+            } catch (localErr) {
+                console.warn('[Translation] Local engine fail/loading:', localErr.message);
+            }
+
+            // 2. FALLBACK PARA O BACKEND (Argos/DeepL)
+            if (!translatedText) {
+                console.log(`[Translation] FALLBACK to server...`);
+                const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+                const response = await fetch(`${API_BASE_URL}/translate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: message.text, from: senderLang, to: readerLang })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    translatedText = data.translated || data.translatedText;
+                    console.log(`[Translation] SERVER SUCCESS: "${translatedText?.substring(0, 30)}..."`);
                 }
             }
+
+            if (translatedText && translatedText !== message.text) {
+                setTranslations(prev => {
+                    if (prev[cacheKey]) return prev;
+                    return { ...prev, [cacheKey]: { translatedText, translation: { text: translatedText, language: readerLang } } };
+                });
+            }
         } catch (e) {
-            console.error(`[Translation] Failed for ${cacheKey}:`, e);
+            console.error(`[Translation] CRITICAL FAIL for ${cacheKey}:`, e);
         } finally {
             translatingRef.current.delete(cacheKey);
         }

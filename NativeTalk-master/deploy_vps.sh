@@ -67,8 +67,8 @@ ENV
 
 # Start/Restart PM2
 echo "Managing PM2 processes..."
-# Stop heavy workers to free up CPU
-pm2 stop whisper-worker argos-worker 2>/dev/null || true
+# Restart workers (fallback) - will fail silently if not exists
+pm2 restart whisper-worker argos-worker 2>/dev/null || true
 pm2 delete nativetalk-backend 2>/dev/null || true
 pm2 start src/server.js --name nativetalk-backend
 pm2 save
