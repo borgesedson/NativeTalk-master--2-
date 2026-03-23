@@ -137,6 +137,8 @@ class TranslationEngine {
             }
         }
         console.log('[TranslationEngine] Todos os downloads prioritários concluídos ou em cache.');
+    }
+
     async getSTTPipeline() {
         if (this.sttPipeline) return this.sttPipeline;
         if (this.loadingSTT) return this.loadingSTT;
