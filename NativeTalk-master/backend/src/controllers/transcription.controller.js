@@ -53,6 +53,10 @@ export async function transcribeAudioMessage(req, res) {
       if (!originalTranscription || originalTranscription.startsWith('🎤')) {
         const whisperUrl = process.env.WHISPER_API_URL || 'http://127.0.0.1:5001/stt-and-translate';
         console.log(`🎤 Tentando Whisper VPS em ${whisperUrl}...`);
+        
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 45000); // 45s timeout
+
         try {
           const response = await fetch(whisperUrl, {
             method: 'POST',
@@ -61,8 +65,11 @@ export async function transcribeAudioMessage(req, res) {
               audio: base64Data,
               from: senderLangCode,
               to: receiverLangCode 
-            })
+            }),
+            signal: controller.signal
           });
+          
+          clearTimeout(timeout);
           
           if (response.ok) {
             const data = await response.json();
@@ -70,7 +77,8 @@ export async function transcribeAudioMessage(req, res) {
             console.log(`✅ Whisper VPS result: "${originalTranscription}"`);
           }
         } catch (error) {
-          console.error('❌ Erro Whisper VPS:', error.message);
+          clearTimeout(timeout);
+          console.error('❌ Erro Whisper VPS:', error.message === 'The user aborted a request.' ? 'Timeout (45s)' : error.message);
         }
       }
 

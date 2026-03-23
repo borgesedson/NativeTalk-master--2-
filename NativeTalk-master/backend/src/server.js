@@ -179,7 +179,7 @@ if (process.env.NODE_ENV === "production") {
 
 // 🔒 PAYLOADS
 app.use(express.json({
-  limit: '5mb', // ✅ Aumentado de 2mb para 5mb
+  limit: '10mb', // ✅ Aumentado de 5mb para 10mb
   verify: (req, res, buf, encoding) => {
     if (buf && buf.length) {
       req.rawBody = buf;
@@ -187,7 +187,7 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({
-  limit: '5mb',
+  limit: '10mb',
   extended: true,
   parameterLimit: 200 // ✅ Aumentado de 100 para 200
 }));
@@ -256,12 +256,18 @@ app.post('/api/translate', async (req, res) => {
     // VPS expects: text, from, to (NOT source/target!)
     const vpsPayload = { text, from, to };
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
     const argosUrl = process.env.VITE_ARGOS_API_URL || 'http://127.0.0.1:5000/translate';
     const response = await fetch(argosUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(vpsPayload)
+      body: JSON.stringify(vpsPayload),
+      signal: controller.signal
     });
+
+    clearTimeout(timeout);
 
     if (!response.ok) {
       const errText = await response.text();
@@ -331,13 +337,19 @@ app.post('/api/stt', async (req, res) => {
     if (audio) payload.audio = audio;
     if (audio_url) payload.audio_url = audio_url;
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000); // 45s timeout for STT
+
     console.log(`[STT] Calling Whisper VPS...`);
     const whisperUrl = process.env.WHISPER_API_URL || process.env.VITE_WHISPER_API_URL || 'http://127.0.0.1:5000/stt-and-translate';
     const response = await fetch(whisperUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
+
+    clearTimeout(timeout);
 
     if (!response.ok) {
       const errText = await response.text();
