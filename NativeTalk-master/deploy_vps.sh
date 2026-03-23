@@ -81,6 +81,15 @@ cat <<NGINX > /etc/nginx/sites-available/nativetalk
 server {
     listen 80;
     server_name nativetalk.duckdns.org;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name nativetalk.duckdns.org;
+
+    ssl_certificate /etc/letsencrypt/live/nativetalk.duckdns.org/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/nativetalk.duckdns.org/privkey.pem; # managed by Certbot
 
     # Backend / API
     location /api {
@@ -93,10 +102,9 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header X-Forwarded-Host \$host;
     }
 
-    # Frontend (Served by Node.js)
+    # Frontend (Served by Node.js or Static)
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
@@ -107,7 +115,6 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header X-Forwarded-Host \$host;
     }
 }
 NGINX
