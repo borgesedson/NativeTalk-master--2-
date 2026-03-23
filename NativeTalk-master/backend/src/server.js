@@ -70,7 +70,17 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Adicionado eval para transformers.js
-      connectSrc: ["'self'", "https://*.stream-io-api.com", "https://*.insforge.app", "wss:", "ws:", "https://huggingface.co", "https://*.huggingface.co"],
+      connectSrc: [
+        "'self'", 
+        "https://*.stream-io-api.com", 
+        "https://*.stream-io-video.com",
+        "https://hint.stream-io-video.com",
+        "https://*.insforge.app", 
+        "wss:", "ws:", 
+        "https://huggingface.co", 
+        "https://*.huggingface.co",
+        "https://cdn-lfs.huggingface.co"
+      ],
       mediaSrc: ["'self'", "blob:", "https:"],
       objectSrc: ["'none'"],
       frameSrc: ["'self'"],

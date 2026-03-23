@@ -84,6 +84,17 @@ export const logout = async () => {
   try {
     localStorage.removeItem('stream_chat_token');
     localStorage.removeItem('stream_chat_token_time');
+    localStorage.removeItem('stream_chat_token_v2');
+    localStorage.removeItem('stream_chat_token_time_v2');
+    
+    // Clear all user-specific tokens too
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('stream_chat_token_v2_')) {
+            localStorage.removeItem(key);
+        }
+    }
+
     await auth.signOut();
   } catch (error) {
     console.error('Erro no logout:', error);
@@ -645,8 +656,12 @@ export const getGroups = async () => {
 
 export const getStreamToken = async () => {
   try {
-    const CACHE_KEY = 'stream_chat_token_v2';
-    const CACHE_TIME_KEY = 'stream_chat_token_time_v2';
+    const { data: { user } } = await auth.getCurrentUser();
+    if (!user?.id) throw new Error('User not authenticated');
+
+    const userId = user.id;
+    const CACHE_KEY = `stream_chat_token_v2_${userId}`;
+    const CACHE_TIME_KEY = `stream_chat_token_time_v2_${userId}`;
     const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
     // 1. Check Cache
@@ -654,11 +669,11 @@ export const getStreamToken = async () => {
     const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
     
     if (cachedToken && cachedTime && (Date.now() - parseInt(cachedTime)) < CACHE_TTL) {
-      console.log('[Stream] Using cached token (TTL ok)');
+      console.log(`[Stream] Using cached token for ${userId} (TTL ok)`);
       return { token: cachedToken };
     }
 
-    console.log('[Auth] Fetching fresh Stream token from local backend...');
+    console.log(`[Auth] Fetching fresh Stream token for ${userId} from local backend...`);
     const { data: { session } } = await insforge.auth.getCurrentSession();
     
     if (!session?.accessToken) throw new Error('No active session token');

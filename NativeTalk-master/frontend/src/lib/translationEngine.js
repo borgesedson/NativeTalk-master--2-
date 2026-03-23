@@ -71,7 +71,12 @@ class TranslationEngine {
             delete this.loading[key];
             return this.pipelines[key];
         } catch (error) {
-            console.error(`[TranslationEngine] Erro ao carregar modelo ${modelName}:`, error);
+            // Silenciar erros de rede comuns para não travar a UI ou poluir o console excessivamente
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                console.warn(`[TranslationEngine] Modelo ${modelName} não pôde ser baixado (provavelmente offline ou bloqueado por CSP).`);
+            } else {
+                console.error(`[TranslationEngine] Erro ao carregar modelo ${modelName}:`, error);
+            }
             delete this.loading[key];
             return null;
         }

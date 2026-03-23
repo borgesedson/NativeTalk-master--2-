@@ -441,27 +441,37 @@ const NewChatModal = ({ isOpen, onClose }) => {
     );
 };
 
+const ContactsSidebarSkeleton = () => (
+    <div className="flex flex-col h-full bg-[#0D2137]">
+        <div className="p-6">
+            <div className="h-8 bg-white/5 rounded-lg w-1/3 mb-6 animate-pulse" />
+            <div className="h-12 bg-white/5 rounded-xl w-full mb-8 animate-pulse" />
+            <div className="space-y-2">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="flex gap-3 mb-4 animate-pulse">
+                        <div className="size-12 rounded-full bg-white/5 shrink-0"></div>
+                        <div className="flex-1 py-1 space-y-2">
+                            <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                            <div className="h-3 bg-white/5 rounded w-3/4"></div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+
 const ContactsSidebarContent = ({ isLoading }) => {
-    const { client } = useChatContext() || {};
+    // Only call context hook if we are not loading (guards against early render outside provider)
+    const chatContext = useChatContext();
+    const { client } = chatContext || {};
     const currentUser = client?.user;
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [isNewChatOpen, setIsNewChatOpen] = useState(false);
     const [channelSearch, setChannelSearch] = useState("");
 
-    if (isLoading) {
-        return (
-            <div className="flex flex-col h-full bg-[#0D2137]">
-                <div className="p-6">
-                    <div className="h-8 bg-white/5 rounded-lg w-1/3 mb-6 animate-pulse" />
-                    <div className="h-12 bg-white/5 rounded-xl w-full mb-8 animate-pulse" />
-                    <div className="space-y-2">
-                        {[1, 2, 3, 4, 5, 6].map(i => <SkeletonRow key={i} />)}
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    if (isLoading) return <ContactsSidebarSkeleton />;
 
     // Safely extract userId - MUST be a valid string for Stream SDK
     const userId = currentUser?.id;
@@ -1626,19 +1636,20 @@ const StitchChat = () => {
 
     // Render logic: Show structure immediately, wrap in Stream providers only when ready
     if (!chatClient || !streamReady) {
+        const skeletonContacts = <ContactsSidebarSkeleton />;
         return (
             <div className="str-chat__theme-dark">
                 {isMobile ? (
                     <MobileChatLayout
                         isChatOpen={isMobileChatOpen}
                         navigationSidebar={navigationSidebar}
-                        contactsSidebar={contactsSidebar}
+                        contactsSidebar={skeletonContacts}
                         mainChatArea={skeletonMainChatArea}
                     />
                 ) : (
                     <DesktopChatLayout
                         navigationSidebar={navigationSidebar}
-                        contactsSidebar={contactsSidebar}
+                        contactsSidebar={skeletonContacts}
                         mainChatArea={skeletonMainChatArea}
                     />
                 )}
