@@ -20,7 +20,9 @@ import IncomingCallScreen from '../calls/IncomingCallScreen';
 import VoiceCallScreen from '../calls/VoiceCallScreen';
 import VideoCallScreen from '../calls/VideoCallScreen';
 import toast from 'react-hot-toast';
-import { uploadAudio, transcribeAudio } from '../../lib/api';
+import { uploadAudio, transcribeAudio, getUserProfile } from '../../lib/api';
+import translationEngine from '../../lib/translationEngine';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import Logo from '../Logo';
 
 const BUILD_ID = 'v2.6.0-PWA-PRO'; // PWA BottomNav & Mobile Layout
@@ -1051,8 +1053,7 @@ const ChatInput = () => {
             const uploadResult = await uploadAudio(processedBlob, 'audio/wav');
             const audioUrl = uploadResult?.url || uploadResult;
             if (!audioUrl) throw new Error("Erro ao fazer upload do áudio");
-
-            toast.loading('🌐 Transcrevendo e traduzindo...', { id: toastId });
+            
             const otherMemberId = Object.keys(channel.state.members).find(id => id !== authUser.id);
             const otherMember = channel.state.members[otherMemberId]?.user;
             const toLang = getLanguageCode(
@@ -1062,33 +1063,32 @@ const ChatInput = () => {
                 'en'
             );
 
-            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-            let response;
+            // 🎙️ TRANSCRIÇÃO LOCAL (CLIENT-SIDE)
+            toast.loading('🧠 Transcrevendo localmente...', { id: toastId });
+            
+            let transcript = '';
             try {
-                response = await fetch(`${API_BASE_URL}/stt`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        audio_url: audioUrl,
-                        from: 'auto',
-                        to: toLang
-                    })
-                });
-            } catch (fetchError) {
-                console.error('[Audio] Connection error:', fetchError);
-                throw new Error("Serviço de transcrição (VPS) inacessível. Verifique se o backend e o servidor Whisper estão rodando.");
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const arrayBuffer = await processedBlob.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                const audioData = audioBuffer.getChannelData(0); // Float32Array
+                
+                transcript = await translationEngine.transcribe(audioData);
+                console.log('✅ Local Transcription:', transcript);
+            } catch (sttError) {
+                console.error('[Audio] Local STT Error:', sttError);
+                // Fallback silencioso para texto vazio se falhar feio
             }
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || "Falha no serviço de transcrição (VPS)");
+            if (!transcript) {
+                toast.error('Não foi possível entender o áudio.', { id: toastId });
+                throw new Error("Falha na transcrição local");
             }
-            const result = await response.json();
 
-            const transcript = result?.transcript || '';
-            const translatedText = result?.translated || '';
-            const detectedLang = result?.detected_language || authUser?.native_language || 'en';
-            if (!transcript) throw new Error("Não foi possível transcrever o áudio.");
+            // 🌐 TRADUÇÃO LOCAL (OPCIONAL/SERVER FALLBACK)
+            toast.loading('🇧🇷 Traduzindo...', { id: toastId });
+            const detectedLang = authUser?.native_language || 'pt';
+            const translatedText = await translationEngine.translate(transcript, detectedLang, toLang) || transcript;
 
             await channel.sendMessage({
                 text: transcript,

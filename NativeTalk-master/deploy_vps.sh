@@ -56,6 +56,8 @@ ENV
 
 # Start/Restart PM2
 echo "Managing PM2 processes..."
+# Stop heavy workers to free up CPU
+pm2 stop whisper-worker argos-worker 2>/dev/null || true
 pm2 delete nativetalk-backend 2>/dev/null || true
 pm2 start src/server.js --name nativetalk-backend
 pm2 save
@@ -79,6 +81,8 @@ server {
         proxy_cache_bypass \$http_upgrade;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
     }
 
     # Frontend (Served by Node.js)
@@ -91,6 +95,8 @@ server {
         proxy_cache_bypass \$http_upgrade;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
     }
 }
 NGINX

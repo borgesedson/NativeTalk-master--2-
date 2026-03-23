@@ -24,6 +24,7 @@ import { translateText } from "./lib/translation.js"; // ✅ Importar função d
 
 
 const app = express();
+app.set('trust proxy', 1); // ✅ Confiar no proxy do Nginx (essencial para HTTPS/CORS)
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
@@ -68,9 +69,9 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      connectSrc: ["'self'", "https://*.stream-io-api.com", "wss:", "ws:"],
-      mediaSrc: ["'self'", "blob:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Adicionado eval para transformers.js
+      connectSrc: ["'self'", "https://*.stream-io-api.com", "https://*.insforge.app", "wss:", "ws:", "https://huggingface.co", "https://*.huggingface.co"],
+      mediaSrc: ["'self'", "blob:", "https:"],
       objectSrc: ["'none'"],
       frameSrc: ["'self'"],
     },

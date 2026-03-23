@@ -137,6 +137,50 @@ class TranslationEngine {
             }
         }
         console.log('[TranslationEngine] Todos os downloads prioritários concluídos ou em cache.');
+    async getSTTPipeline() {
+        if (this.sttPipeline) return this.sttPipeline;
+        if (this.loadingSTT) return this.loadingSTT;
+
+        const modelName = 'Xenova/whisper-tiny';
+        console.log(`[TranslationEngine] Carregando modelo STT: ${modelName}`);
+        this.loadingSTT = pipeline('automatic-speech-recognition', modelName, {
+            progress_callback: (child) => {
+                if (child.status === 'done') {
+                    console.log(`[TranslationEngine] Modelo STT carregado.`);
+                }
+            }
+        });
+
+        try {
+            this.sttPipeline = await this.loadingSTT;
+            delete this.loadingSTT;
+            return this.sttPipeline;
+        } catch (error) {
+            console.error('[TranslationEngine] Erro ao carregar STT:', error);
+            delete this.loadingSTT;
+            return null;
+        }
+    }
+
+    async transcribe(audioData) {
+        try {
+            const transcriber = await this.getSTTPipeline();
+            if (!transcriber) return null;
+
+            console.log('[TranslationEngine] Transcrevendo áudio localmente...');
+            const output = await transcriber(audioData, {
+                chunk_length_s: 30,
+                stride_length_s: 5,
+                language: 'portuguese',
+                task: 'transcribe',
+                return_timestamps: false
+            });
+
+            return output.text || '';
+        } catch (error) {
+            console.error('[TranslationEngine] Erro na transcrição local:', error);
+            return null;
+        }
     }
 }
 
