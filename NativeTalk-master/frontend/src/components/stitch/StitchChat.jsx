@@ -8,7 +8,7 @@ import { StreamVideoClient, StreamVideo } from '@stream-io/video-react-sdk';
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 import { useNavigate, useLocation } from 'react-router';
 import useAuthUser from '../../hooks/useAuthUser';
-import { getStreamToken, translateMessage, getAllUsers, getUserProfile } from '../../lib/api';
+import { getStreamToken, translateMessage, getAllUsers, getUserProfile, uploadAudio, transcribeAudio } from '../../lib/api';
 import { LANGUAGES } from '../../constants';
 import DesktopChatLayout from '../layout/DesktopChatLayout';
 import MobileChatLayout from '../layout/MobileChatLayout';
@@ -20,9 +20,7 @@ import IncomingCallScreen from '../calls/IncomingCallScreen';
 import VoiceCallScreen from '../calls/VoiceCallScreen';
 import VideoCallScreen from '../calls/VideoCallScreen';
 import toast from 'react-hot-toast';
-import { uploadAudio, transcribeAudio, getUserProfile } from '../../lib/api';
 import translationEngine from '../../lib/translationEngine';
-import { useIsMobile } from '../../hooks/useIsMobile';
 import Logo from '../Logo';
 
 const BUILD_ID = 'v2.6.0-PWA-PRO'; // PWA BottomNav & Mobile Layout
