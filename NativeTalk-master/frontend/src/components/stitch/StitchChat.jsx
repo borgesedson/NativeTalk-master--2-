@@ -20,7 +20,6 @@ import IncomingCallScreen from '../calls/IncomingCallScreen';
 import VoiceCallScreen from '../calls/VoiceCallScreen';
 import VideoCallScreen from '../calls/VideoCallScreen';
 import toast from 'react-hot-toast';
-import translationEngine from '../../lib/translationEngine';
 import Logo from '../Logo';
 
 const BUILD_ID = 'v2.6.0-PWA-PRO'; // PWA BottomNav & Mobile Layout
@@ -1071,32 +1070,19 @@ const ChatInput = () => {
                 'en'
             );
 
-            // 🎙️ TRANSCRIÇÃO LOCAL (CLIENT-SIDE)
-            toast.loading('🧠 Transcrevendo localmente...', { id: toastId });
+            // 🎙️ TRANSCRIÇÃO E TRADUÇÃO (SERVER-SIDE via Whisper/Argos)
+            toast.loading('🧠 Processando áudio (Whisper)...', { id: toastId });
             
-            let transcript = '';
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const arrayBuffer = await processedBlob.arrayBuffer();
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                const audioData = audioBuffer.getChannelData(0); // Float32Array
-                
-                transcript = await translationEngine.transcribe(audioData);
-                console.log('✅ Local Transcription:', transcript);
-            } catch (sttError) {
-                console.error('[Audio] Local STT Error:', sttError);
-                // Fallback silencioso para texto vazio se falhar feio
-            }
+            const detectedLang = getLanguageCode(authUser?.native_language || 'pt');
+            const result = await transcribeAudio(audioUrl, authUser.id, otherMemberId, null, detectedLang, toLang);
+
+            const transcript = result?.originalTranscription || '';
+            const translatedText = result?.translatedTranscription || transcript;
 
             if (!transcript) {
-                toast.error('Não foi possível entender o áudio.', { id: toastId });
-                throw new Error("Falha na transcrição local");
+                toast.error('Não foi possível transcrever o áudio.', { id: toastId });
+                throw new Error("Falha na transcrição remota");
             }
-
-            // 🌐 TRADUÇÃO LOCAL (OPCIONAL/SERVER FALLBACK)
-            toast.loading('🇧🇷 Traduzindo...', { id: toastId });
-            const detectedLang = authUser?.native_language || 'pt';
-            const translatedText = await translationEngine.translate(transcript, detectedLang, toLang) || transcript;
 
             await channel.sendMessage({
                 text: transcript,
@@ -1604,7 +1590,31 @@ const StitchChat = () => {
     }
 
     const navigationSidebar = <NavigationSidebar />;
-    const contactsSidebar = <ContactsSidebarContent isLoading={loading || !streamReady} />;
+
+    // Render skeleton while Stream is not ready — no Stream hooks used here
+    if (!chatClient || !streamReady) {
+        return (
+            <div className="str-chat__theme-dark">
+                {isMobile ? (
+                    <MobileChatLayout
+                        isChatOpen={isMobileChatOpen}
+                        navigationSidebar={navigationSidebar}
+                        contactsSidebar={<ContactsSidebarSkeleton />}
+                        mainChatArea={<div className="flex-1 flex items-center justify-center"><div className="size-8 rounded-full border-t-2 border-primary animate-spin" /></div>}
+                    />
+                ) : (
+                    <DesktopChatLayout
+                        navigationSidebar={navigationSidebar}
+                        contactsSidebar={<ContactsSidebarSkeleton />}
+                        mainChatArea={<div className="flex-1 flex items-center justify-center"><div className="size-8 rounded-full border-t-2 border-primary animate-spin" /></div>}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    // Stream is ready — now safe to render components that use useChatContext
+    const contactsSidebar = <ContactsSidebarContent isLoading={false} />;
     const mainChatArea = (
         <Channel>
             <Window>
@@ -1613,36 +1623,11 @@ const StitchChat = () => {
                     onTranslate={handleTranslate}
                     onStartVoiceCall={startVoiceCall}
                     onStartVideoCall={startVideoCall}
-                    isLoading={loading || !streamReady}
+                    isLoading={false}
                 />
             </Window>
         </Channel>
     );
-
-    const skeletonMainChatArea = <MainChatAreaContent isLoading={true} />;
-
-    // Render logic: Show structure immediately, wrap in Stream providers only when ready
-    if (!chatClient || !streamReady) {
-        const skeletonContacts = <ContactsSidebarSkeleton />;
-        return (
-            <div className="str-chat__theme-dark">
-                {isMobile ? (
-                    <MobileChatLayout
-                        isChatOpen={isMobileChatOpen}
-                        navigationSidebar={navigationSidebar}
-                        contactsSidebar={skeletonContacts}
-                        mainChatArea={skeletonMainChatArea}
-                    />
-                ) : (
-                    <DesktopChatLayout
-                        navigationSidebar={navigationSidebar}
-                        contactsSidebar={skeletonContacts}
-                        mainChatArea={skeletonMainChatArea}
-                    />
-                )}
-            </div>
-        );
-    }
 
     return (
         <Chat client={chatClient} theme="str-chat__theme-dark">

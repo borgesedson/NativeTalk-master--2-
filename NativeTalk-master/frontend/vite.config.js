@@ -94,4 +94,18 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router'],
+          'vendor-stream': ['stream-chat', 'stream-chat-react', '@stream-io/video-react-sdk'],
+          'vendor-utils': ['axios', 'framer-motion', 'lucide-react', 'date-fns', 'zustand'],
+          'vendor-i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    cssCodeSplit: true
+  }
 })

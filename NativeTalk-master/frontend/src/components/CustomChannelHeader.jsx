@@ -1,27 +1,15 @@
-import { useState, useEffect } from "react";
 import { useChannelStateContext } from "stream-chat-react";
 import { useNavigate } from "react-router";
 import { useCall } from "../contexts/CallManager";
 import useAuthUser from "../hooks/useAuthUser";
 import { getLanguageCode } from "../lib/utils";
-import { translationEngine } from "../lib/translationEngine";
 
 const CustomChannelHeader = ({ handleVideoCall }) => {
   const { channel } = useChannelStateContext();
   const navigate = useNavigate();
   const { startCall } = useCall();
   const { authUser } = useAuthUser();
-  const [isTranslationReady, setIsTranslationReady] = useState(translationEngine.isReady);
-
-  useEffect(() => {
-    const checkState = () => {
-      if (translationEngine.isReady !== isTranslationReady) {
-        setIsTranslationReady(translationEngine.isReady);
-      }
-    };
-    const interval = setInterval(checkState, 2000);
-    return () => clearInterval(interval);
-  }, [isTranslationReady]);
+  const isTranslationReady = true; // Sempre pronto agora que é servidor
 
   const members = Object.values(channel.state.members || {});
   const otherMember = members.find(member => member.user_id !== channel._client.userID);
